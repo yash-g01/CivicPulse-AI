@@ -1,0 +1,22 @@
+# Ignore dependency directories
+node_modules/
+venv/
+.venv/
+
+# Ignore build outputs and logs
+dist/
+build/
+*.log
+
+# Ignore environment variables / secrets
+.env
+.env.local
+
+# Ignore OS-specific system files
+.DS_Store
+
+# Ignore IDE-specific files
+.vscode/
+
+# Ignore Python cache files
+__pycache__/
