@@ -52,7 +52,7 @@ def triage_waste_image(image_path: str) -> dict:
     if not raw_text:
         raise ValueError("No output received from Gemini model.")
 
-    return json.loads(raw_text)  # Parse the JSON output from the model
+    return json.loads(raw_text.strip().removeprefix("```json").removesuffix("```").strip())  # Parse the JSON output from the model
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:

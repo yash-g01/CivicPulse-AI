@@ -2,7 +2,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    # AI Engine (Gemini 2.5 Flash for Multimodal Vision)
+    # AI Engine (Gemini 3.8 Flash for Multimodal Vision)
     GEMINI_API_KEY: str = ""
     GEMINI_MODEL: str = "gemini-3.8-flash"
 
