@@ -7,3 +7,4 @@ pillow
 httpx
 playwright
 boto3
+duckduckgo-search
