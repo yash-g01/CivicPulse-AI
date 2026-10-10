@@ -20,7 +20,7 @@ def upload_image_bytes(s3_key: str, data: bytes, content_type: str = "image/jpeg
     return f"s3://{settings.S3_BUCKET}/{s3_key}"
 
 def get_image_bytes(s3_key: str) -> bytes:
-    """Retrieves image bytes from S3 for Bedrock/Gemini audit inspection."""
+    """Retrieves image bytes from S3 for Groq audit inspection."""
     res = s3.get_object(Bucket=settings.S3_BUCKET, Key=s3_key)
     return res["Body"].read()
 
