@@ -6,3 +6,4 @@ python-multipart
 pillow
 httpx
 playwright
+boto3
