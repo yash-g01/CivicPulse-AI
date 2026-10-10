@@ -5,7 +5,7 @@ from app.services.audit_service import audit_resolution_images
 if __name__ == "__main__":
     image_path = "tests/dump.jpeg"
     result = triage_waste_image(image_path)
-    print(f"[*] Triaging {image_path} via Gemini 3.8 Flash...")
+    print(f"[*] Triaging {image_path} via Groq Vision...")
     print(json.dumps(result, indent=2))
 
     image_before_path = "tests/dump.jpeg"

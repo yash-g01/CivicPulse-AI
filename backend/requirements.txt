@@ -5,6 +5,8 @@ pydantic-settings
 python-multipart
 pillow
 httpx
-playwright
+browser-use
 boto3
 duckduckgo-search
+playwright
+groq
