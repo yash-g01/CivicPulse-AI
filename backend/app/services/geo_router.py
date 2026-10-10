@@ -8,21 +8,21 @@ from app.services.discovery_agent import discover_authority_via_web
 LOCAL_DIRECTORY = {
     "pune": {
         "corporation": "Pune Municipal Corporation (PMC)",
-        "portal_url": "[https://complaint.pmc.gov.in/](https://complaint.pmc.gov.in/)",
+        "portal_url": "https://complaint.pmc.gov.in/",
         "nodal_email": "feedback@punecorporation.org",
         "requires_otp": True,
         "jurisdiction": "PMC Urban Local Body",
     },
     "mumbai": {
         "corporation": "Brihanmumbai Municipal Corporation (BMC)",
-        "portal_url": "[https://portal.mcgm.gov.in/](https://portal.mcgm.gov.in/)",
+        "portal_url": "https://portal.mcgm.gov.in/",
         "nodal_email": "feedback@mcgm.gov.in",
         "requires_otp": False,
         "jurisdiction": "BMC Greater Mumbai",
     },
     "bengaluru": {
         "corporation": "Bruhat Bengaluru Mahanagara Palike (BBMP)",
-        "portal_url": "[https://bbmpeaas.karnataka.gov.in/sahaaya/](https://bbmpeaas.karnataka.gov.in/sahaaya/)",
+        "portal_url": "https://bbmpeaas.karnataka.gov.in/sahaaya/",
         "nodal_email": "comm@bbmp.gov.in",
         "requires_otp": True,
         "jurisdiction": "BBMP Solid Waste Division",
