@@ -1,6 +1,6 @@
 import { ShieldAlert, ShieldCheck, Upload } from "lucide-react"
 import { useState, type ChangeEvent } from "react"
-import { simulateResolution, getFullApiUrl } from "../api"
+import { simulateResolution } from "../api"
 import type { Audit, Ticket } from "../types"
 
 type Props = {
@@ -17,8 +17,6 @@ export function AuditBay({ ticketId, beforeUrl, beforePreview, afterUrl, audit, 
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const resolvedBefore = beforePreview || (beforeUrl ? getFullApiUrl(beforeUrl) : null)
-  const resolvedAfter = afterPreview || (afterUrl ? getFullApiUrl(afterUrl) : null)
 
   async function onAfter(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
