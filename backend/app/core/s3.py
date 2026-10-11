@@ -2,12 +2,14 @@ import boto3
 from botocore.exceptions import ClientError
 from app.config import settings
 
-s3 = boto3.client(
-    "s3",
-    region_name=settings.AWS_REGION,
-    aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-    aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
-)
+from typing import Dict, Any
+
+_boto_kwargs: Dict[str, Any] = {"region_name": settings.AWS_REGION}
+if settings.AWS_ACCESS_KEY_ID and settings.AWS_SECRET_ACCESS_KEY:
+    _boto_kwargs["aws_access_key_id"] = settings.AWS_ACCESS_KEY_ID
+    _boto_kwargs["aws_secret_access_key"] = settings.AWS_SECRET_ACCESS_KEY
+
+s3 = boto3.client("s3", **_boto_kwargs)
 
 def upload_image_bytes(s3_key: str, data: bytes, content_type: str = "image/jpeg") -> str:
     """Uploads raw image bytes to the CivicPulse S3 bucket."""

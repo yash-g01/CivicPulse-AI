@@ -870,6 +870,33 @@ async def run_filing_worker(ticket_id: str, form_data: dict, local_image_path: U
     elif isinstance(local_image_path, str) and local_image_path and os.path.exists(local_image_path):
         valid_paths = [os.path.abspath(local_image_path)]
 
+    # S3 Fallback for ephemeral cloud storage (containers / scaled instances)
+    if not valid_paths:
+        s3_keys = form_data.get("before_s3_keys") or ([form_data.get("before_s3_key")] if form_data.get("before_s3_key") else [])
+        if not s3_keys:
+            rec = get_ticket(ticket_id)
+            if rec:
+                s3_keys = rec.get("before_s3_keys") or ([rec.get("before_s3_key")] if rec.get("before_s3_key") else [])
+
+        if s3_keys:
+            os.makedirs("/tmp/civicpulse", exist_ok=True)
+            from app.core.s3 import get_image_bytes
+            for idx, s3_k in enumerate(s3_keys):
+                if not s3_k:
+                    continue
+                try:
+                    img_bytes = get_image_bytes(s3_k)
+                    ext = ".jpg"
+                    if "." in s3_k:
+                        ext = os.path.splitext(s3_k)[1] or ".jpg"
+                    dl_path = f"/tmp/civicpulse/{ticket_id}_cloud_{idx}{ext}"
+                    with open(dl_path, "wb") as f:
+                        f.write(img_bytes)
+                    valid_paths.append(os.path.abspath(dl_path))
+                    print(f"[{ticket_id}] 📥 Restored evidence photo from S3 ({s3_k}) -> {dl_path}")
+                except Exception as s3_err:
+                    print(f"[{ticket_id}] ⚠️ S3 image download notice ({s3_k}): {s3_err}")
+
     submitted_fields: Dict[str, Any] = {
         "complainant_name": user_name,
         "mobile_number": user_phone,
@@ -901,7 +928,14 @@ async def run_filing_worker(ticket_id: str, form_data: dict, local_image_path: U
     async with async_playwright() as p:
         browser = await p.chromium.launch(
             headless=settings.HEADLESS_BROWSER,
-            args=["--disable-web-security", "--ignore-certificate-errors"]
+            args=[
+                "--disable-web-security",
+                "--ignore-certificate-errors",
+                "--no-sandbox",
+                "--disable-setuid-sandbox",
+                "--disable-dev-shm-usage",
+                "--disable-gpu",
+            ]
         )
         context = await browser.new_context(ignore_https_errors=True)
         page = await context.new_page()

@@ -1,0 +1,25 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: civicpulse-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
+      - DYNAMODB_TABLE=${DYNAMODB_TABLE:-CivicPulseTable}
+      - S3_BUCKET=${S3_BUCKET:-civicpulse-evidence-store}
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - GROQ_VISION_MODEL=${GROQ_VISION_MODEL:-qwen/qwen3.8-27b}
+      - PORTAL_MODE=${PORTAL_MODE:-mock}
+      - HEADLESS_BROWSER=true
+      - CORS_ORIGINS=*
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

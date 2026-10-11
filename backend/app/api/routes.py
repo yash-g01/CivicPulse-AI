@@ -321,6 +321,10 @@ async def get_evidence_image(ticket_id: str, kind: str):
 
     if ticket:
         s3_key = ticket.get(f"{kind}_s3_key")
+        if not s3_key and kind == "before":
+            s3_keys = ticket.get("before_s3_keys")
+            if s3_keys and isinstance(s3_keys, list) and len(s3_keys) > 0:
+                s3_key = s3_keys[0]
         if s3_key:
             try:
                 data = await asyncio.to_thread(get_image_bytes, s3_key)

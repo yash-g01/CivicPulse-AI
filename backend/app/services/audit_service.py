@@ -7,7 +7,9 @@ from PIL import Image
 from groq import Groq
 from app.config import settings
 
-groq_client = Groq(api_key=os.getenv("GROQ_API_KEY") or settings.GROQ_API_KEY)
+def _get_groq_client() -> Groq:
+    api_key = os.getenv("GROQ_API_KEY") or settings.GROQ_API_KEY or "dummy_key_for_offline"
+    return Groq(api_key=api_key)
 
 def _encode_optimized_image(image_path: str, max_size: int = 1024) -> str:
     """Downscales images to <= 1024px and encodes to JPEG Base64 for fast transfer."""
@@ -67,6 +69,7 @@ def audit_resolution_images(before_path: str, after_path: str) -> dict:
         }
 
     try:
+        groq_client = _get_groq_client()
         chat_completion = groq_client.chat.completions.create(
             model=getattr(settings, "GROQ_VISION_MODEL", "qwen/qwen3.8-27b"),
             messages=[

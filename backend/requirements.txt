@@ -8,5 +8,8 @@ httpx
 browser-use
 boto3
 duckduckgo-search
+ddgs
 playwright
 groq
+pillow-heif
+aiofiles

@@ -1,6 +1,21 @@
 import type { CreateReportResponse, Ticket, Triage, TriageRejection } from "./types"
 
-const API = "/api/v1"
+export const API_BASE = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "")
+export const API = `${API_BASE}/api/v1`
+
+export function getFullApiUrl(path: string | undefined | null): string {
+  if (!path) return ""
+  if (
+    path.startsWith("http://") ||
+    path.startsWith("https://") ||
+    path.startsWith("blob:") ||
+    path.startsWith("data:")
+  ) {
+    return path
+  }
+  const cleanPath = path.startsWith("/") ? path : `/${path}`
+  return `${API_BASE}${cleanPath}`
+}
 
 export class TriageRejectionError extends Error {
   rejection: TriageRejection

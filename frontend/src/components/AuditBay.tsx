@@ -1,6 +1,6 @@
 import { ShieldAlert, ShieldCheck, Upload } from "lucide-react"
 import { useState, type ChangeEvent } from "react"
-import { simulateResolution } from "../api"
+import { simulateResolution, getFullApiUrl } from "../api"
 import type { Audit, Ticket } from "../types"
 
 type Props = {
@@ -16,6 +16,9 @@ export function AuditBay({ ticketId, beforeUrl, beforePreview, afterUrl, audit, 
   const [afterPreview, setAfterPreview] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const resolvedBefore = beforePreview || (beforeUrl ? getFullApiUrl(beforeUrl) : null)
+  const resolvedAfter = afterPreview || (afterUrl ? getFullApiUrl(afterUrl) : null)
 
   async function onAfter(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
@@ -46,8 +49,8 @@ export function AuditBay({ ticketId, beforeUrl, beforePreview, afterUrl, audit, 
 
       <div className="mt-5 grid gap-4 sm:grid-cols-2">
         <figure className="overflow-hidden rounded-2xl border border-rule bg-paper-deep">
-          {(beforePreview || beforeUrl) ? (
-            <img src={beforePreview || beforeUrl} alt="Original complaint" className="h-56 w-full object-cover" />
+          {resolvedBefore ? (
+            <img src={resolvedBefore} alt="Original complaint" className="h-56 w-full object-cover" />
           ) : (
             <div className="grid h-56 place-items-center text-sm text-dust">Original evidence</div>
           )}
@@ -57,8 +60,8 @@ export function AuditBay({ ticketId, beforeUrl, beforePreview, afterUrl, audit, 
         </figure>
 
         <label className="relative overflow-hidden rounded-2xl border border-dashed border-rule bg-paper-deep">
-          {(afterPreview || afterUrl) ? (
-            <img src={afterPreview || afterUrl} alt="Claimed cleanup" className="h-56 w-full object-cover" />
+          {resolvedAfter ? (
+            <img src={resolvedAfter} alt="Claimed cleanup" className="h-56 w-full object-cover" />
           ) : (
             <div className="grid h-56 place-items-center px-4 text-center text-sm text-dust">
               <span className="flex flex-col items-center gap-2">

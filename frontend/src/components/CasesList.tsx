@@ -13,7 +13,7 @@ import {
   User,
 } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
-import { getAllTickets } from "../api"
+import { getAllTickets, getFullApiUrl } from "../api"
 import { isInFlight, statusCopy } from "../status"
 import type { Ticket, TicketStatus } from "../types"
 
@@ -406,8 +406,10 @@ export function CasesList({ onSelectTicket, onNewFiling }: Props) {
               ).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })
               : "Recent"
 
-            const beforeThumb = ticket.evidence_url || `/api/v1/evidence/${tid}/before`
-            const afterThumb = ticket.after_url || (ticket.after_s3_key ? `/api/v1/evidence/${tid}/after` : undefined)
+            const beforeThumb = getFullApiUrl(ticket.evidence_url || `/api/v1/evidence/${tid}/before`)
+            const afterThumb = ticket.after_url
+              ? getFullApiUrl(ticket.after_url)
+              : (ticket.after_s3_key ? getFullApiUrl(`/api/v1/evidence/${tid}/after`) : undefined)
 
             return (
               <article
@@ -462,7 +464,7 @@ export function CasesList({ onSelectTicket, onNewFiling }: Props) {
                         alt="Citizen complaint evidence"
                         className="h-full w-full object-cover"
                         onError={(e) => {
-                          ; (e.target as HTMLImageElement).src = "/api/v1/mock/sample-image/dump"
+                          ; (e.target as HTMLImageElement).src = getFullApiUrl("/api/v1/mock/sample-image/dump")
                         }}
                       />
                       <figcaption className="absolute bottom-0 inset-x-0 bg-ink/75 py-0.5 text-center text-[9px] font-bold uppercase tracking-wider text-paper">
@@ -477,9 +479,9 @@ export function CasesList({ onSelectTicket, onNewFiling }: Props) {
                           alt="Field resolution claim"
                           className="h-full w-full object-cover"
                           onError={(e) => {
-                            ; (e.target as HTMLImageElement).src = isGhost
-                              ? "/api/v1/mock/sample-image/fake_clean"
-                              : "/api/v1/mock/sample-image/cleaned"
+                            ; (e.target as HTMLImageElement).src = getFullApiUrl(
+                              isGhost ? "/api/v1/mock/sample-image/fake_clean" : "/api/v1/mock/sample-image/cleaned"
+                            )
                           }}
                         />
                         <figcaption

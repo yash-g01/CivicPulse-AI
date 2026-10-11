@@ -13,7 +13,9 @@ try:
 except Exception:
     pass
 
-groq_client = Groq(api_key=os.getenv("GROQ_API_KEY") or settings.GROQ_API_KEY)
+def _get_groq_client() -> Groq:
+    api_key = os.getenv("GROQ_API_KEY") or settings.GROQ_API_KEY or "dummy_key_for_offline"
+    return Groq(api_key=api_key)
 
 def _encode_optimized_image(image_path: str, max_size: int = 1024) -> str:
     img = Image.open(image_path)
@@ -63,6 +65,7 @@ def triage_waste_image(image_path: str) -> dict:
     base64_image = _encode_optimized_image(image_path)
 
     try:
+        groq_client = _get_groq_client()
         chat_completion = groq_client.chat.completions.create(
             model=getattr(settings, "GROQ_VISION_MODEL", "qwen/qwen3.8-27b"),
             messages=[

@@ -5,12 +5,12 @@ from decimal import Decimal
 from botocore.exceptions import ClientError
 from app.config import settings
 
-dynamodb : Any = boto3.resource(
-    "dynamodb",
-    region_name=settings.AWS_REGION,
-    aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-    aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
-)
+_boto_kwargs: Dict[str, Any] = {"region_name": settings.AWS_REGION}
+if settings.AWS_ACCESS_KEY_ID and settings.AWS_SECRET_ACCESS_KEY:
+    _boto_kwargs["aws_access_key_id"] = settings.AWS_ACCESS_KEY_ID
+    _boto_kwargs["aws_secret_access_key"] = settings.AWS_SECRET_ACCESS_KEY
+
+dynamodb: Any = boto3.resource("dynamodb", **_boto_kwargs)
 table = dynamodb.Table(settings.DYNAMODB_TABLE)
 
 def _convert_floats_to_decimals(obj: Any) -> Any:

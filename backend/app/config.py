@@ -19,7 +19,11 @@ class Settings(BaseSettings):
     PORTAL_MODE: str = "mock"  # "live" or "mock"
     DEFAULT_PORTAL_URL: str = "https://complaint.pmc.gov.in/"
     MOCK_PORTAL_URL: str = "http://localhost:8000/mock-pmc-portal"
-    HEADLESS_BROWSER: bool = False
+    HEADLESS_BROWSER: bool = True
+
+    # Cloud Networking & Server Settings
+    CORS_ORIGINS: str = "*"
+    PORT: int = 8000
 
     # Pydantic Settings Configuration
     model_config = SettingsConfigDict(
