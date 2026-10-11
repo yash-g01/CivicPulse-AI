@@ -70,6 +70,7 @@ export type FiledFields = {
 }
 
 export type Ticket = {
+  PK?: string
   ticket_id?: string
   status: TicketStatus
   user_phone?: string
@@ -82,6 +83,8 @@ export type Ticket = {
   before_s3_key?: string
   before_s3_keys?: string[]
   after_s3_key?: string
+  after_url?: string
+  token_id?: string
   evidence_url?: string
   evidence_urls?: string[]
   complaint_text?: string

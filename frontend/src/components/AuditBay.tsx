@@ -7,11 +7,12 @@ type Props = {
   ticketId: string
   beforeUrl?: string
   beforePreview?: string | null
+  afterUrl?: string
   audit?: Audit
   onAudited: (ticket: Ticket) => void
 }
 
-export function AuditBay({ ticketId, beforeUrl, beforePreview, audit, onAudited }: Props) {
+export function AuditBay({ ticketId, beforeUrl, beforePreview, afterUrl, audit, onAudited }: Props) {
   const [afterPreview, setAfterPreview] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -56,8 +57,8 @@ export function AuditBay({ ticketId, beforeUrl, beforePreview, audit, onAudited 
         </figure>
 
         <label className="relative overflow-hidden rounded-2xl border border-dashed border-rule bg-paper-deep">
-          {afterPreview ? (
-            <img src={afterPreview} alt="Claimed cleanup" className="h-56 w-full object-cover" />
+          {(afterPreview || afterUrl) ? (
+            <img src={afterPreview || afterUrl} alt="Claimed cleanup" className="h-56 w-full object-cover" />
           ) : (
             <div className="grid h-56 place-items-center px-4 text-center text-sm text-dust">
               <span className="flex flex-col items-center gap-2">
@@ -67,7 +68,7 @@ export function AuditBay({ ticketId, beforeUrl, beforePreview, audit, onAudited 
             </div>
           )}
           <figcaption className="px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-dust">
-            Worker claim
+            Worker claim {afterUrl && !afterPreview ? "(Audited)" : ""}
           </figcaption>
           <input type="file" accept="image/*" className="absolute inset-0 cursor-pointer opacity-0" onChange={onAfter} />
         </label>

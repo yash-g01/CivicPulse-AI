@@ -156,3 +156,13 @@ export async function simulateResolution(ticketId: string, afterImage: File): Pr
   }
   return json as Ticket
 }
+
+export async function getAllTickets(status?: string): Promise<Ticket[]> {
+  const query = status ? `?status=${encodeURIComponent(status)}` : ""
+  const res = await fetch(`${API}/tickets${query}`)
+  const json: unknown = await res.json().catch(() => [])
+  if (!res.ok) {
+    throw new Error(detailMessage(json, "Could not fetch tickets list."))
+  }
+  return json as Ticket[]
+}

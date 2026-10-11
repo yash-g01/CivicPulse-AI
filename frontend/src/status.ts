@@ -59,3 +59,12 @@ export function severityWords(n?: number): string {
   if (score >= 2) return "Mild"
   return "Low"
 }
+
+export function maskPhone(phone?: string): string {
+  if (!phone) return "On file (Protected)"
+  const clean = phone.replace(/\D/g, "")
+  if (clean.length >= 4) {
+    return `••••••${clean.slice(-4)}`
+  }
+  return "••••••••••"
+}
