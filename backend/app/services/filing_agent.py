@@ -6,7 +6,7 @@ import platform
 import subprocess
 import time
 import urllib.parse
-from typing import Any, Optional, Dict, List
+from typing import Any, Optional, Dict, List, Union
 from playwright.async_api import async_playwright, Page, TimeoutError as PlaywrightTimeoutError
 from groq import Groq
 
@@ -652,19 +652,20 @@ async def _robust_fill(page: Page, action: Dict[str, Any], ticket_id: str, allow
             except Exception:
                 continue
 
-    # Username / Login credentials
-    if semantic_role in ("username", "user") or "user" in selector.lower():
+    # Citizen Name / Full Name
+    if semantic_role in ("name", "citizen_name") or "name" in selector.lower():
         for pattern in [
-            'input[name*="user" i]:visible',
-            'input[id*="user" i]:visible',
-            'input[name="userName"]:visible',
-            '#id3:visible'
+            '#citizen-name:visible',
+            'input[name*="citizen" i]:visible',
+            'input[name*="name" i]:visible',
+            'input[id*="name" i]:visible',
+            'input[placeholder*="name" i]:visible'
         ]:
             try:
                 loc = page.locator(pattern)
                 if await loc.count() > 0:
                     await loc.first.fill(val, timeout=4000)
-                    print(f"[{ticket_id}] ✍️  Filled username '{val}' via pattern '{pattern}'")
+                    print(f"[{ticket_id}] ✍️  Filled citizen name '{val}' via pattern '{pattern}'")
                     return True
             except Exception:
                 continue
@@ -779,7 +780,7 @@ async def _trigger_email_fallback(ticket_id: str, form_data: dict, reason: str =
 # Universal Autonomous AI Agent Filing Worker
 # ---------------------------------------------------------------------------
 
-async def run_filing_worker(ticket_id: str, form_data: dict, local_image_path: str):
+async def run_filing_worker(ticket_id: str, form_data: dict, local_image_path: Union[str, List[str]]):
     """
     Autonomous LLM-driven browser worker.
     - Inspects ANY municipal grievance portal dynamically using Playwright and Groq.
@@ -795,17 +796,19 @@ async def run_filing_worker(ticket_id: str, form_data: dict, local_image_path: s
         or form_data.get("authority", {}).get("portal_url")
         or settings.DEFAULT_PORTAL_URL
     )
-    if settings.PORTAL_MODE == "mock" and not form_data.get("portal_url") and not form_data.get("authority", {}).get("portal_url"):
+    if settings.PORTAL_MODE == "mock" or "mock-pmc-portal" in str(raw_url):
         target_url = settings.MOCK_PORTAL_URL
     else:
         target_url = normalize_portal_url(raw_url)
 
     corp_name = form_data.get("authority", {}).get("corporation", "Municipal Corporation")
     user_phone = str(form_data.get("user_phone", "9822012345"))
+    user_name = str(form_data.get("user_name") or "Concerned Citizen")
     landmark = form_data.get("landmark", "Roadside unsegregated waste pile")
     complaint_text = form_data.get("complaint_text", "Chronic unsegregated waste accumulation obstructing passage and posing public health hazards.")
 
     ticket_context = {
+        "citizen_name": user_name,
         "citizen_phone": user_phone,
         "landmark": landmark,
         "complaint_text": complaint_text,
@@ -1111,9 +1114,17 @@ Output strictly valid JSON matching:
 
                     elif act_type == "upload_file":
                         file_input = page.locator(selector if selector else 'input[type="file"]')
-                        if await file_input.count() > 0 and os.path.exists(local_image_path):
-                            await file_input.first.set_input_files(os.path.abspath(local_image_path))
-                            print(f"[{ticket_id}] 📎 Attached photographic evidence {os.path.basename(local_image_path)}")
+                        if await file_input.count() > 0:
+                            if isinstance(local_image_path, list):
+                                valid_paths = [os.path.abspath(p) for p in local_image_path if os.path.exists(p)]
+                            elif isinstance(local_image_path, str) and os.path.exists(local_image_path):
+                                valid_paths = [os.path.abspath(local_image_path)]
+                            else:
+                                valid_paths = []
+
+                            if valid_paths:
+                                await file_input.first.set_input_files(valid_paths)
+                                print(f"[{ticket_id}] 📎 Attached {len(valid_paths)} photographic evidence file(s)")
 
                     elif act_type == "request_human_input":
                         prompt_msg = act.get("prompt") or f"Verification required on {corp_name} portal. Enter SMS code sent to {user_phone}."

@@ -77,6 +77,11 @@ MOCK_PORTAL_HTML = """<!DOCTYPE html>
         <div class="section-title">Step 2: Grievance Details</div>
         
         <div class="form-group">
+          <label for="citizen-name">Citizen / Complainant Name</label>
+          <input type="text" id="citizen-name" name="citizen_name" placeholder="Full name of complainant" />
+        </div>
+
+        <div class="form-group">
           <label for="department">Department</label>
           <select id="department" name="department">
             <option value="Solid Waste Management" selected>Solid Waste Management (SWM)</option>
@@ -96,8 +101,8 @@ MOCK_PORTAL_HTML = """<!DOCTYPE html>
         </div>
 
         <div class="form-group">
-          <label for="evidence-file">Attach Photographic Evidence</label>
-          <input type="file" id="evidence-file" name="evidence" accept="image/*" />
+          <label for="evidence-file">Attach Photographic Evidence (Multiple)</label>
+          <input type="file" id="evidence-file" name="evidence" accept="image/*" multiple />
         </div>
 
         <button type="button" id="btn-submit" class="btn-success" onclick="submitGrievance()">Register Complaint</button>

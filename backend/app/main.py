@@ -3,6 +3,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes import router
 from app.api.mock_portal import mock_router
 
+try:
+    import pillow_heif
+    pillow_heif.register_heif_opener()
+except Exception:
+    pass
+
 app = FastAPI(
     title="CivicPulse AI API",
     description="Autonomous Civic Waste Action & Ghost-Resolution Auditor Engine",

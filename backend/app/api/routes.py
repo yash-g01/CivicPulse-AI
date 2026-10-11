@@ -13,40 +13,103 @@ from app.services.filing_agent import run_filing_worker
 from app.core.dynamodb import get_ticket, save_ticket, update_ticket_status
 from app.core.s3 import upload_image_bytes, get_image_bytes
 
-from typing import Optional
+from typing import Optional, List
 
 router = APIRouter()
 
 class OtpPayload(BaseModel):
     otp: str
 
+@router.post("/triage")
+async def check_image_triage(
+    image: Optional[UploadFile] = File(None),
+    images: Optional[List[UploadFile]] = File(None)
+):
+    upload_list: List[UploadFile] = []
+    if images:
+        upload_list.extend(images)
+    if image and image not in upload_list:
+        upload_list.append(image)
+    if not upload_list:
+        raise HTTPException(status_code=400, detail="At least one image is required for triage.")
+
+    ticket_id = str(uuid.uuid4())[:8]
+    os.makedirs("/tmp/civicpulse", exist_ok=True)
+
+    triage_data = None
+    for idx, img in enumerate(upload_list[:3]):
+        img_bytes = await img.read()
+        local_path = f"/tmp/civicpulse/triage_{ticket_id}_{idx}_{img.filename or 'upload.jpg'}"
+        with open(local_path, "wb") as f:
+            f.write(img_bytes)
+
+        cur_triage = await asyncio.to_thread(triage_waste_image, local_path)
+        if cur_triage.get("is_valid_waste"):
+            triage_data = cur_triage
+            break
+        elif triage_data is None:
+            triage_data = cur_triage
+
+    return triage_data or {"is_valid_waste": False, "rejection_reason": "No image could be triaged."}
+
+
 @router.post("/reports")
 async def create_waste_report(
     background_tasks: BackgroundTasks,
-    image: UploadFile = File(...),
+    image: Optional[UploadFile] = File(None),
+    images: Optional[List[UploadFile]] = File(None),
     lat: float = Form(...),
     lng: float = Form(...),
     user_phone: str = Form(...),
+    user_name: Optional[str] = Form(None),
     portal_url: Optional[str] = Form(None)
 ):
+    upload_list: List[UploadFile] = []
+    if images:
+        upload_list.extend(images)
+    if image and image not in upload_list:
+        upload_list.append(image)
+    if not upload_list:
+        raise HTTPException(status_code=400, detail="At least one evidence photo is required.")
+
     start_total = time.time()
     ticket_id = str(uuid.uuid4())[:8]
-    image_bytes = await image.read()
-
     os.makedirs("/tmp/civicpulse", exist_ok=True)
-    local_path = f"/tmp/civicpulse/{ticket_id}_before.jpg"
-    with open(local_path, "wb") as f:
-        f.write(image_bytes)
 
-    s3_key = f"evidence/{ticket_id}_before.jpg"
+    primary_img = upload_list[0]
+    primary_bytes = await primary_img.read()
+    primary_local_path = f"/tmp/civicpulse/{ticket_id}_{primary_img.filename or 'before.jpg'}"
+    with open(primary_local_path, "wb") as f:
+        f.write(primary_bytes)
 
-    print(f"\n⚡ [{ticket_id}] Starting Concurrent Intake Processing...")
+    primary_s3_key = f"evidence/{ticket_id}_before.jpg"
 
-    # Execute Triage, Geo-routing, and S3 upload in parallel non-blocking threads
+    # Save additional images and prepare S3 keys
+    all_s3_keys = [primary_s3_key]
+    all_image_bytes = [(primary_s3_key, primary_bytes)]
+    all_local_paths = [primary_local_path]
+
+    for idx, additional_img in enumerate(upload_list[1:], start=1):
+        add_bytes = await additional_img.read()
+        add_key = f"evidence/{ticket_id}_before_{idx}.jpg"
+        all_s3_keys.append(add_key)
+        all_image_bytes.append((add_key, add_bytes))
+        add_path = f"/tmp/civicpulse/{ticket_id}_{idx}_{additional_img.filename or 'before.jpg'}"
+        with open(add_path, "wb") as f:
+            f.write(add_bytes)
+        all_local_paths.append(add_path)
+
+    print(f"\n⚡ [{ticket_id}] Starting Concurrent Intake Processing ({len(upload_list)} images attached)...")
+
+    # Upload all images to S3
+    def _upload_all_images():
+        for k, b in all_image_bytes:
+            upload_image_bytes(k, b)
+
     try:
-        triage_task = asyncio.to_thread(triage_waste_image, local_path)
+        triage_task = asyncio.to_thread(triage_waste_image, primary_local_path)
         geo_task = asyncio.to_thread(resolve_authority, lat, lng)
-        s3_task = asyncio.to_thread(upload_image_bytes, s3_key, image_bytes)
+        s3_task = asyncio.to_thread(_upload_all_images)
 
         triage_data, authority, _ = await asyncio.gather(
             triage_task, geo_task, s3_task
@@ -55,40 +118,59 @@ async def create_waste_report(
         print(f"[{ticket_id}] Intake failed: {e}")
         raise HTTPException(status_code=500, detail=f"Processing pipeline failed: {str(e)}")
 
+    # If primary image was rejected, but user uploaded multiple images, test secondary image before rejecting
+    if not triage_data.get("is_valid_waste") and len(upload_list) > 1:
+        for idx in range(1, min(len(upload_list), 3)):
+            add_path = f"/tmp/civicpulse/{ticket_id}_{idx}_{upload_list[idx].filename or 'before.jpg'}"
+            sec_triage = await asyncio.to_thread(triage_waste_image, add_path)
+            if sec_triage.get("is_valid_waste"):
+                triage_data = sec_triage
+                break
+
     if not triage_data.get("is_valid_waste"):
         rejection = triage_data.get("rejection_reason") or "Image does not depict actionable public waste."
-        raise HTTPException(status_code=400, detail=f"Rejected: {rejection}")
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "NOT_GARBAGE",
+                "message": rejection,
+                "is_valid_waste": False,
+                "rejection_reason": rejection,
+                "triage": triage_data,
+            }
+        )
 
-    # If caller explicitly provided a target municipal portal URL, prioritize it
     if portal_url:
         authority["portal_url"] = portal_url
 
-    # Initialize DynamoDB Ticket
     from app.core.s3 import generate_presigned_view_url
-    evidence_url = generate_presigned_view_url(s3_key)
+    evidence_urls = [generate_presigned_view_url(k) for k in all_s3_keys]
+    evidence_url = evidence_urls[0]
 
     record = {
         "status": "QUEUED_FOR_FILING",
         "user_phone": user_phone,
+        "user_name": user_name or "",
         "lat": str(lat),
         "lng": str(lng),
         "authority": authority,
         "portal_url": portal_url or authority.get("portal_url"),
         "triage": triage_data,
-        "before_s3_key": s3_key,
+        "before_s3_key": primary_s3_key,
+        "before_s3_keys": all_s3_keys,
         "evidence_url": evidence_url,
+        "evidence_urls": evidence_urls,
         "complaint_text": triage_data.get("complaint_text", ""),
         "landmark": triage_data.get("landmark_context", ""),
         "created_at": str(time.time()),
     }
     await asyncio.to_thread(save_ticket, ticket_id, record)
 
-    # Launch Playwright / browser-use worker in the background
     background_tasks.add_task(
         run_filing_worker,
         ticket_id=ticket_id,
         form_data=record,
-        local_image_path=local_path
+        local_image_path=all_local_paths if len(all_local_paths) > 1 else primary_local_path
     )
 
     elapsed = (time.time() - start_total) * 1000
@@ -100,6 +182,8 @@ async def create_waste_report(
         "triage": triage_data,
         "authority": authority,
         "evidence_url": evidence_url,
+        "evidence_urls": evidence_urls,
+        "user_name": user_name or "",
         "processing_time_ms": round(elapsed, 1),
     }
 

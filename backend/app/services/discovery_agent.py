@@ -155,42 +155,52 @@ def draft_statutory_complaint_email(ticket_data: Dict[str, Any], recipient_email
     lat = ticket_data.get("lat", "")
     lng = ticket_data.get("lng", "")
     phone = ticket_data.get("user_phone", "")
+    citizen_name = ticket_data.get("user_name") or ticket_data.get("citizen_name") or ""
     categories = ticket_data.get("triage", {}).get("waste_categories", [])
     severity = ticket_data.get("triage", {}).get("severity", 4)
 
     # Generate or fetch S3 presigned URL for the photographic evidence
     evidence_url = ticket_data.get("evidence_url", "")
+    evidence_urls = ticket_data.get("evidence_urls") or ([evidence_url] if evidence_url else [])
     if not evidence_url and ticket_data.get("before_s3_key"):
         try:
             from app.core.s3 import generate_presigned_view_url
             evidence_url = generate_presigned_view_url(ticket_data["before_s3_key"])
+            evidence_urls = [evidence_url]
         except Exception as ex:
             print(f"[Presigned URL Notice] {ex}")
     if not evidence_url and ticket_data.get("ticket_id"):
         try:
             from app.core.s3 import generate_presigned_view_url
             evidence_url = generate_presigned_view_url(f"evidence/{ticket_data['ticket_id']}_before.jpg")
+            evidence_urls = [evidence_url]
         except Exception as ex:
             print(f"[Presigned URL Notice] {ex}")
+
+    evidence_display = "\n".join(f"  • Photo {i+1}: {u}" for i, u in enumerate(evidence_urls)) if len(evidence_urls) > 1 else evidence_url
 
     prompt = f"""
 You are a public interest legal and civic advocacy expert.
 Draft a formal, polite, yet legally authoritative statutory civic grievance email addressed to {corp_name}.
 Context:
+- Complainant / Citizen Name: {citizen_name if citizen_name else 'Concerned Citizen'}
 - Location Landmark: {landmark}
 - GPS Coordinates: Latitude {lat}, Longitude {lng}
 - Identified Waste: {', '.join(categories) if categories else 'Mixed solid refuse'}
 - Severity Level: {severity}/5
 - Public Health Hazard: {complaint_summary}
-- Photographic Evidence (AWS S3 Presigned URL): {evidence_url if evidence_url else 'Available upon request'}
-- Citizen Contact: {phone}
+- Photographic Evidence (AWS S3 Presigned URL): {evidence_display if evidence_display else 'Available upon request'}
+- Citizen Contact Phone: {phone}
 - Legal Citation: Solid Waste Management (SWM) Rules, 2016 and statutory public health provisions under Municipal Corporation Act.
 
 Draft:
 1. Subject line: High-priority, concise, specifying landmark and urgent action needed.
 2. Body: Formal, respectful, detailing location coordinates, exact landmark features, public health hazards (pest breeding, sanitation breach), and requesting immediate field clearance and sanitary compliance report.
-CRITICAL: Since the mailto: intent cannot attach files, you MUST explicitly include the Photographic Evidence AWS S3 Presigned URL ({evidence_url}) directly in the email body as verifiable visual evidence for the municipal officers.
-End with citizen contact details.
+CRITICAL: Since the mailto: intent cannot attach files, you MUST explicitly include the Photographic Evidence AWS S3 Presigned URL(s) directly in the email body as verifiable visual evidence for the municipal officers.
+CRITICAL: End with a formal citizen sign-off using the Citizen's Name:
+"Yours sincerely,
+{citizen_name if citizen_name else 'Concerned Citizen'}
+Contact: {phone}"
 
 Output strictly valid JSON:
 {{
@@ -200,10 +210,21 @@ Output strictly valid JSON:
 """
 
     subject = f"[STATUTORY GRIEVANCE] Urgent Public Waste Removal: {landmark}"
-    evidence_line = (
-        f"- Photographic Evidence (AWS S3 URL): {evidence_url}\n"
-        f"  (Note: Visual evidence shared via secure S3 URL as mailto: intent does not support file attachments)\n"
-    ) if evidence_url else ""
+    if evidence_urls:
+        if len(evidence_urls) == 1:
+            evidence_line = (
+                f"- Photographic Evidence (AWS S3 URL): {evidence_urls[0]}\n"
+                f"  (Note: Visual evidence shared via secure S3 URL as mailto: intent does not support file attachments)\n"
+            )
+        else:
+            evidence_line = (
+                f"- Photographic Evidence ({len(evidence_urls)} photos hosted on AWS S3):\n"
+                + "\n".join(f"  • Photo {i+1}: {u}" for i, u in enumerate(evidence_urls))
+                + "\n  (Note: Visual evidence shared via secure S3 URLs as mailto: intent does not support file attachments)\n"
+            )
+    else:
+        evidence_line = ""
+
     body = (
         f"To,\nThe Municipal Commissioner / Competent Authority\n{corp_name}\n\n"
         f"SUBJECT: Urgent Statutory Grievance under Solid Waste Management Rules, 2016\n\n"
@@ -218,7 +239,9 @@ Output strictly valid JSON:
         f"Under the Solid Waste Management Rules, 2016, the Municipal Corporation is legally mandated to ensure "
         f"regular clearance of public areas and prevent open contamination.\n\n"
         f"Kindly dispatch the zonal sanitation team immediately and provide a resolution confirmation.\n\n"
-        f"Citizen Contact: {phone}\n"
+        f"Yours sincerely,\n"
+        f"{citizen_name if citizen_name else 'Concerned Citizen'}\n"
+        f"Contact: {phone}\n"
         f"Generated via CivicPulse AI Engine"
     )
 
