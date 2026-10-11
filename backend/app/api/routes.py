@@ -163,6 +163,17 @@ async def create_waste_report(
         "complaint_text": triage_data.get("complaint_text", ""),
         "landmark": triage_data.get("landmark_context", ""),
         "created_at": str(time.time()),
+        "filed_fields": {
+            "complainant_name": user_name or "Concerned Citizen",
+            "mobile_number": user_phone or "On file",
+            "category": (triage_data.get("waste_categories") or ["Solid Waste Management"])[0] if triage_data.get("waste_categories") else "Solid Waste Management",
+            "landmark": triage_data.get("landmark_context") or "Roadside civic accumulation",
+            "description": triage_data.get("complaint_text") or "Solid waste accumulation detected and reported.",
+            "evidence_count": len(all_s3_keys),
+            "evidence_files": [f"Evidence Photo {i+1}" for i in range(len(all_s3_keys))],
+            "portal_name": authority.get("corporation", "Municipal Corporation"),
+            "portal_url": portal_url or authority.get("portal_url", ""),
+        },
     }
     await asyncio.to_thread(save_ticket, ticket_id, record)
 

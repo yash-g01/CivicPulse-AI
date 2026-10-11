@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     S3_BUCKET: str = "civicpulse-evidence-store"
 
     # Portal Automation & Live Municipal Navigation
-    PORTAL_MODE: str = "live"  # "live" or "mock"
+    PORTAL_MODE: str = "mock"  # "live" or "mock"
     DEFAULT_PORTAL_URL: str = "https://complaint.pmc.gov.in/"
     MOCK_PORTAL_URL: str = "http://localhost:8000/mock-pmc-portal"
     HEADLESS_BROWSER: bool = False

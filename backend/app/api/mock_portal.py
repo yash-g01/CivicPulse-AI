@@ -127,6 +127,7 @@ MOCK_PORTAL_HTML = """<!DOCTYPE html>
       const otpVal = document.getElementById('otp-input').value.trim();
       if (otpVal.length >= 4) {
         document.getElementById('otp-verified-msg').classList.remove('hidden');
+        document.getElementById('otp-section').classList.add('hidden');
         document.getElementById('complaint-section').classList.remove('hidden');
       } else {
         alert('Please enter a valid OTP code.');

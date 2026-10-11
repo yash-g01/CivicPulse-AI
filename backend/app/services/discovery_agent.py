@@ -185,7 +185,7 @@ Draft a formal, polite, yet legally authoritative statutory civic grievance emai
 Context:
 - Complainant / Citizen Name: {citizen_name if citizen_name else 'Concerned Citizen'}
 - Location Landmark: {landmark}
-- GPS Coordinates: Latitude {lat}, Longitude {lng}
+- GPS Coordinates: Latitude {lat}, Longitude {lng} [Open in Google Maps](https://www.google.com/maps/search/?api=1&query={lat},{lng})
 - Identified Waste: {', '.join(categories) if categories else 'Mixed solid refuse'}
 - Severity Level: {severity}/5
 - Public Health Hazard: {complaint_summary}
@@ -232,7 +232,7 @@ Output strictly valid JSON:
         f"I am writing to officially report an acute public health and sanitation hazard resulting from chronic "
         f"unsegregated waste accumulation at the following location:\n\n"
         f"- Landmark: {landmark}\n"
-        f"- GPS Coordinates: Latitude {lat}, Longitude {lng}\n"
+        f"- GPS Coordinates: Latitude {lat}, Longitude {lng} [Open in Google Maps](https://www.google.com/maps/search/?api=1&query={lat},{lng})\n"
         f"{evidence_line}"
         f"- Hazard Description: {complaint_summary}\n\n"
         f"Note: Photographic proof is hosted at the secure S3 URL above for municipal inspection (mailto: intent cannot attach files).\n\n"

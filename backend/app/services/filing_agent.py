@@ -2,8 +2,6 @@ import os
 import re
 import json
 import asyncio
-import platform
-import subprocess
 import time
 import urllib.parse
 from typing import Any, Optional, Dict, List, Union
@@ -304,11 +302,81 @@ async def _extract_interactive_elements(page: Page) -> List[Dict[str, Any]]:
 # Universal Action Execution Helpers (Selector-Agnostic)
 # ---------------------------------------------------------------------------
 
+def _find_otp_trigger_elements(dom_elements: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    """
+    Checks if the page contains a mobile input field along with an OTP trigger action
+    (e.g., 'Get OTP', 'Send OTP', 'Generate OTP').
+    Returns dict with keys 'input' and 'trigger' if found, else None.
+    """
+    trigger_el = None
+    for el in dom_elements:
+        if el.get("tag") in ("button", "link") or el.get("type") in ("button", "submit"):
+            text = (el.get("text") or el.get("value") or "").lower().strip()
+            role = el.get("semantic_role", "")
+            if role == "otp_trigger" or any(kw in text for kw in ["get otp", "send otp", "generate otp"]):
+                trigger_el = el
+                break
+
+    if not trigger_el:
+        return None
+
+    mobile_el = None
+    # Priority 1: Specifically dedicated OTP mobile input (e.g. #otpMobileNo)
+    for el in dom_elements:
+        if el.get("tag") == "input":
+            sel = el.get("selector", "").lower()
+            name = (el.get("name") or "").lower()
+            if "otpmobile" in sel or "otpmobile" in name or "otp_mobile" in sel:
+                mobile_el = el
+                break
+
+    # Priority 2: General mobile input near trigger
+    if not mobile_el:
+        for el in dom_elements:
+            if el.get("tag") == "input":
+                role = el.get("semantic_role", "")
+                placeholder = (el.get("placeholder") or "").lower()
+                sel = el.get("selector", "").lower()
+                if (role == "mobile" or "mobile" in placeholder or el.get("type") == "tel") and "pass" not in sel:
+                    mobile_el = el
+                    break
+
+    if mobile_el and trigger_el:
+        return {"input": mobile_el, "trigger": trigger_el}
+    return None
+
+def _find_active_otp_input(dom_elements: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    """
+    Finds the active OTP code input on the page (e.g. #loginOTP, #otpNumber, #otp-input).
+    """
+    for el in dom_elements:
+        if el.get("tag") == "input":
+            role = el.get("semantic_role", "")
+            sel = el.get("selector", "").lower()
+            name = (el.get("name") or "").lower()
+            placeholder = (el.get("placeholder") or "").lower()
+            if role == "otp" or "loginotp" in sel or "otpnumber" in sel or "otp-input" in sel or (("otp" in sel or "otp" in name or "otp" in placeholder) and "mobile" not in sel and "mobile" not in name):
+                return el
+    return None
+
+def _find_otp_verify_button(dom_elements: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    """
+    Finds the button used to submit/verify the OTP (e.g. #btnVerify, 'Verify', 'Verify OTP').
+    """
+    for el in dom_elements:
+        if el.get("tag") in ("button", "link") or el.get("type") in ("button", "submit"):
+            sel = el.get("selector", "").lower()
+            text = (el.get("text") or el.get("value") or "").lower().strip()
+            role = el.get("semantic_role", "")
+            if "btnverify" in sel or "btn-verify" in sel or role == "verify" or "verify" in text:
+                return el
+    return None
+
 def _detect_login_or_registration_fields(page_url: str, dom_elements: List[Dict[str, Any]]) -> Optional[str]:
     """
-    Detects whether the current portal page presents any mobile number input,
-    citizen login credentials, or registration form.
-    Returns a descriptive reason if login/registration is required, or None otherwise.
+    Detects whether the current portal page presents citizen login credentials,
+    or registration form that cannot be authenticated via mobile OTP.
+    Returns a descriptive reason if manual login/registration is required, or None otherwise.
     """
     lower_url = (page_url or "").lower()
 
@@ -318,7 +386,6 @@ def _detect_login_or_registration_fields(page_url: str, dom_elements: List[Dict[
         "/citizenregistration", "/registercitizen", "/register"
     ])
 
-    has_mobile_field = False
     has_credential_field = False
     has_auth_button = False
 
@@ -335,20 +402,16 @@ def _detect_login_or_registration_fields(page_url: str, dom_elements: List[Dict[
         combined = f"{name} {placeholder} {label} {sel}"
 
         if tag in ("input", "textarea"):
-            if role in ("mobile", "phone") or "mobile" in combined or "phone" in combined or el_type == "tel":
-                has_mobile_field = True
             if role in ("username", "password") or el_type == "password" or "pass" in combined or "user" in combined:
                 has_credential_field = True
 
         if tag in ("button", "link"):
-            if any(kw in text for kw in ["get otp", "send otp", "login", "log in", "log on", "sign in", "register"]):
+            if any(kw in text for kw in ["login", "log in", "log on", "sign in", "register"]):
                 has_auth_button = True
 
-    if has_mobile_field:
-        return "Mobile number authentication field detected"
     if has_credential_field:
         return "Citizen login credentials field detected"
-    if url_match and (has_auth_button or has_credential_field or has_mobile_field):
+    if url_match and (has_auth_button or has_credential_field):
         return "Citizen login or registration page detected"
 
     return None
@@ -555,23 +618,16 @@ async def _robust_click(page: Page, action: Dict[str, Any], ticket_id: str) -> b
 
     return False
 
-async def _robust_fill(page: Page, action: Dict[str, Any], ticket_id: str, allow_mobile_fill: bool = False) -> bool:
+async def _robust_fill(page: Page, action: Dict[str, Any], ticket_id: str, allow_mobile_fill: bool = True) -> bool:
     """Executes a fill action using multiple semantic fallback strategies."""
     selector = action.get("selector", "")
     val = str(action.get("value", ""))
     label = action.get("label", "")
     semantic_role = action.get("semantic_role", "")
 
-    # Policy Guard: Refuse auto-filling mobile numbers into login/auth fields.
-    # Must wait for citizen to complete login or registration.
-    is_mobile_input = (
-        semantic_role in ("mobile", "phone")
-        or (val.isdigit() and len(val) == 10)
-        or any(k in selector.lower() for k in ["mobile", "phone", "txtmobileno"])
-        or any(k in label.lower() for k in ["mobile", "phone"])
-    )
-    if is_mobile_input and not allow_mobile_fill:
-        print(f"[{ticket_id}] 🛑 Refusing auto-fill into mobile field '{selector or label}': must wait for citizen to complete login or registration.")
+    # Guard against empty values or unauthorized password fields
+    if semantic_role == "password" and not val:
+        print(f"[{ticket_id}] 🛑 Refusing fill into empty password field.")
         return False
 
     # Strategy 1: Targeted visible CSS selector
@@ -765,14 +821,6 @@ async def _trigger_email_fallback(ticket_id: str, form_data: dict, reason: str =
         )
     })
 
-    mailto_url = email_data.get("mailto_url", "")
-    try:
-        if platform.system() == "Darwin" and mailto_url:
-            subprocess.Popen(["open", mailto_url])
-            print(f"[{ticket_id}] ✉️  Launched local macOS mailto: intent compose window.")
-    except Exception as ex:
-        print(f"[{ticket_id}] Local mail intent notice: {ex}")
-
     print(f"[{ticket_id}] ✅ Email Fallback Dossier Ready! Recipient: {nodal_email}\n")
     return email_data
 
@@ -814,6 +862,24 @@ async def run_filing_worker(ticket_id: str, form_data: dict, local_image_path: U
         "complaint_text": complaint_text,
         "category": "Solid Waste Management",
         "municipality": corp_name
+    }
+
+    valid_paths: List[str] = []
+    if isinstance(local_image_path, list):
+        valid_paths = [os.path.abspath(p) for p in local_image_path if p and os.path.exists(p)]
+    elif isinstance(local_image_path, str) and local_image_path and os.path.exists(local_image_path):
+        valid_paths = [os.path.abspath(local_image_path)]
+
+    submitted_fields: Dict[str, Any] = {
+        "complainant_name": user_name,
+        "mobile_number": user_phone,
+        "category": "Solid Waste Management",
+        "landmark": landmark,
+        "description": complaint_text,
+        "evidence_count": len(valid_paths) if valid_paths else 1,
+        "evidence_files": [os.path.basename(p) for p in valid_paths] if valid_paths else ["evidence_capture.jpg"],
+        "portal_name": corp_name,
+        "portal_url": target_url,
     }
 
     print(f"\n🤖 [{ticket_id}] Launching autonomous AI Filing Agent for {corp_name} at {target_url}...")
@@ -875,91 +941,103 @@ async def run_filing_worker(ticket_id: str, form_data: dict, local_image_path: U
 
                 dom_elements = await _extract_interactive_elements(page)
 
-                # 1. Detection of Mobile Number or Login/Registration fields:
-                # Instead of automatically filling in the mobile number, pause and wait for the user to complete login or registration.
-                login_reason = _detect_login_or_registration_fields(page.url, dom_elements)
-                if login_reason and not user_login_completed:
-                    prompt_msg = f"Portal requires citizen login or registration on {corp_name}. Please complete login or registration on the portal."
-                    print(f"[{ticket_id}] 🛑 {login_reason}: {prompt_msg}")
-                    print(f"[{ticket_id}] ⏳ Pausing automation: waiting for citizen to complete login or registration (no auto-fill)...")
+                # 1. Active OTP screen detection: Check if portal presents an active OTP input field
+                otp_input_element = _find_active_otp_input(dom_elements)
+                if otp_input_element and not user_login_completed and not _is_complaint_submission_form(dom_elements):
+                    if not user_provided_otp:
+                        record = get_ticket(ticket_id)
+                        if record and (record.get("user_provided_otp") or record.get("user_provided_input")):
+                            user_provided_otp = str(record.get("user_provided_otp") or record.get("user_provided_input")).strip()
 
+                    if not user_provided_otp:
+                        prompt_msg = f"{corp_name} portal dispatched an SMS verification code to {user_phone}. Please enter the OTP to authenticate filing."
+                        print(f"[{ticket_id}] 🛑 Active OTP verification field detected on portal: {prompt_msg}")
+                        update_ticket_status(ticket_id, {
+                            "status": "AWAITING_OTP",
+                            "auth_prompt": prompt_msg,
+                            "agent_telemetry": prompt_msg
+                        })
+
+                        otp_code = None
+                        for poll_i in range(25):  # up to 50 seconds
+                            await asyncio.sleep(2)
+                            rec = get_ticket(ticket_id)
+                            if rec:
+                                val = rec.get("user_provided_otp") or rec.get("user_provided_input")
+                                if val:
+                                    otp_code = str(val).strip()
+                                    print(f"[{ticket_id}] ✅ Citizen supplied OTP code: {otp_code}")
+                                    break
+                            if (settings.PORTAL_MODE == "mock" or "mock-pmc-portal" in str(target_url)) and poll_i >= 6:
+                                otp_code = "592014"
+                                print(f"[{ticket_id}] 💡 Mock demo auto-supplied OTP: {otp_code}")
+                                break
+
+                        if not otp_code:
+                            print(f"[{ticket_id}] ⚠️ Citizen timed out providing OTP verification. Transitioning to statutory email dispatch...")
+                            await browser.close()
+                            await _trigger_email_fallback(ticket_id, form_data, f"Citizen timed out providing OTP verification on {corp_name} portal.")
+                            return
+                        user_provided_otp = otp_code
+
+                    print(f"[{ticket_id}] 🔑 Entering OTP '{user_provided_otp}' into '{otp_input_element.get('selector')}'...")
                     update_ticket_status(ticket_id, {
-                        "status": "AWAITING_HUMAN_ACTION",
-                        "requires_login": True,
-                        "auth_prompt": prompt_msg,
-                        "agent_telemetry": f"Portal requires citizen login/registration ({login_reason}). Waiting for user to complete login or registration..."
+                        "status": "RELAYING_OTP",
+                        "user_provided_otp": None,
+                        "user_provided_input": None,
+                        "agent_telemetry": f"Relaying verification code to {corp_name} portal..."
                     })
+                    await _robust_fill(page, {"selector": otp_input_element.get("selector"), "value": user_provided_otp, "semantic_role": "otp"}, ticket_id, allow_mobile_fill=True)
+                    await asyncio.sleep(0.5)
 
-                    login_done = False
-                    for poll_i in range(30):  # Poll up to 60 seconds (30 * 2s)
-                        await asyncio.sleep(2.0)
+                    verify_btn = _find_otp_verify_button(dom_elements)
+                    if verify_btn:
+                        print(f"[{ticket_id}] 👆 Clicking OTP verify button: {verify_btn.get('selector') or verify_btn.get('text')}")
+                        await _robust_click(page, verify_btn, ticket_id)
+                    else:
+                        await page.keyboard.press("Enter")
 
-                        # A. Check if citizen confirmed login or entered OTP via API
-                        rec = get_ticket(ticket_id)
-                        if rec:
-                            if rec.get("user_login_completed"):
-                                print(f"[{ticket_id}] ✅ Citizen confirmed login via API!")
-                                login_done = True
-                                break
-                            if rec.get("user_provided_otp") or rec.get("user_provided_input"):
-                                user_provided_otp = str(rec.get("user_provided_otp") or rec.get("user_provided_input")).strip()
-                                print(f"[{ticket_id}] ✅ Citizen supplied OTP code: {user_provided_otp}")
-                                login_done = True
-                                break
+                    await asyncio.sleep(2.5)
+                    await _ensure_english_version(page)
 
-                        # B. Check if browser page advanced past the login/registration screen
-                        try:
-                            current_url = page.url
-                            current_dom = await _extract_interactive_elements(page)
-                            still_login = _detect_login_or_registration_fields(current_url, current_dom)
-                            has_complaint_form = _is_complaint_submission_form(current_dom)
-
-                            if (not still_login) or has_complaint_form:
-                                print(f"[{ticket_id}] ✅ Portal page advanced past login screen (URL: {current_url}).")
-                                login_done = True
-                                break
-                        except Exception:
-                            pass
-
-                    if not login_done:
-                        print(f"[{ticket_id}] ⚠️ Citizen login/registration was not completed. Transitioning to statutory email dispatch...")
+                    # Check for invalid OTP error on page
+                    page_content_lower = (await page.content()).lower()
+                    if "invalid otp" in page_content_lower or "incorrect otp" in page_content_lower or "error=invalidotp" in page.url.lower():
+                        print(f"[{ticket_id}] ⚠️ Portal rejected OTP as invalid. Transitioning to statutory email dispatch...")
                         await browser.close()
-                        await _trigger_email_fallback(
-                            ticket_id,
-                            form_data,
-                            f"Portal requires citizen login or registration on {corp_name}. Timed out waiting for citizen completion."
-                        )
+                        await _trigger_email_fallback(ticket_id, form_data, "Verification failed: OTP entered was invalid or expired.")
                         return
 
                     user_login_completed = True
-                    update_ticket_status(ticket_id, {
-                        "status": "AGENT_BROWSING_PORTAL",
-                        "requires_login": False,
-                        "agent_telemetry": f"Citizen login completed! Looking for URL to raise complaint on {corp_name} portal..."
-                    })
-                    await asyncio.sleep(1.0)
+                    user_provided_otp = None
                     continue
 
-                # 2. Once the user completely logs in, look for a URL to raise the complaint
-                if user_login_completed and not _is_complaint_submission_form(dom_elements):
-                    complaint_url_el = _find_raise_complaint_url_or_button(dom_elements, clicked_targets)
-                    if complaint_url_el:
-                        target_name = complaint_url_el.get("text") or complaint_url_el.get("href") or "Raise Complaint"
-                        sel = complaint_url_el.get("selector", "")
-                        clicked_targets.add(sel)
-                        clicked_targets.add(target_name)
-                        print(f"[{ticket_id}] 🔍 Citizen logged in: found URL/link to raise complaint on portal: '{target_name}' ({sel})")
-                        update_ticket_status(ticket_id, {
-                            "status": "AGENT_BROWSING_PORTAL",
-                            "agent_telemetry": f"Found URL to raise complaint: '{target_name}'. Opening complaint form..."
-                        })
-                        await _robust_click(page, complaint_url_el, ticket_id)
-                        await asyncio.sleep(2.0)
-                        await _ensure_english_version(page)
-                        continue
+                # 2. OTP Trigger detection (Mobile Input + GET OTP action)
+                otp_pair = _find_otp_trigger_elements(dom_elements)
+                if otp_pair and not user_login_completed:
+                    input_sel = otp_pair["input"].get("selector")
+                    trigger_sel = otp_pair["trigger"].get("selector")
+                    submitted_fields["mobile_number"] = user_phone
+                    print(f"[{ticket_id}] 📱 Found mobile OTP login option on portal. Requesting OTP dispatch to citizen's number ({user_phone})...")
+                    update_ticket_status(ticket_id, {
+                        "status": "AGENT_BROWSING_PORTAL",
+                        "agent_telemetry": f"Entering citizen mobile ({user_phone}) and requesting OTP from {corp_name} portal..."
+                    })
+                    await _robust_fill(page, {"selector": input_sel, "value": user_phone, "semantic_role": "mobile"}, ticket_id, allow_mobile_fill=True)
+                    try:
+                        loc_otp_mob = page.locator("#otpMobileNo:visible")
+                        if await loc_otp_mob.count() > 0:
+                            await loc_otp_mob.first.fill(user_phone)
+                            print(f"[{ticket_id}] ✍️  Explicitly filled #otpMobileNo with '{user_phone}'")
+                    except Exception:
+                        pass
+                    await asyncio.sleep(0.6)
+                    await _robust_click(page, otp_pair["trigger"], ticket_id)
+                    await asyncio.sleep(3.0)
+                    await _ensure_english_version(page)
+                    continue
 
-                # 3. If NOT logged in and NOT on complaint submission form:
-                #    Check if portal has a Citizen Login / Register option to reach the authentication page
+                # 3. Citizen Login link detection on landing page
                 if not user_login_completed and not _is_complaint_submission_form(dom_elements):
                     login_link = _find_citizen_login_or_register_link(dom_elements, clicked_targets)
                     if login_link:
@@ -967,7 +1045,7 @@ async def run_filing_worker(ticket_id: str, form_data: dict, local_image_path: U
                         sel = login_link.get("selector", "")
                         clicked_targets.add(sel)
                         clicked_targets.add(target_name)
-                        print(f"[{ticket_id}] 🔐 Portal requires citizen login to raise complaint. Navigating to login screen via '{target_name}'...")
+                        print(f"[{ticket_id}] 🔐 Navigating to citizen login screen via '{target_name}'...")
                         update_ticket_status(ticket_id, {
                             "status": "AGENT_BROWSING_PORTAL",
                             "agent_telemetry": f"Navigating to citizen login screen via '{target_name}'..."
@@ -977,44 +1055,65 @@ async def run_filing_worker(ticket_id: str, form_data: dict, local_image_path: U
                         await _ensure_english_version(page)
                         continue
 
-                # 3. Active OTP screen detection: If portal has reached standalone OTP verification screen and citizen OTP not supplied yet
-                otp_input_element = next(
-                    (el for el in dom_elements if el.get("tag") == "input" and el.get("semantic_role") == "otp"),
-                    None
-                )
-                if otp_input_element and not user_provided_otp:
-                    prompt_msg = f"Verification required on {corp_name} portal. Enter SMS code sent to your phone."
-                    print(f"[{ticket_id}] 🛑 Active OTP verification field detected on portal: {prompt_msg}")
+                # 4. Once logged in, look for complaint submission form or URL to raise complaint
+                if user_login_completed and not _is_complaint_submission_form(dom_elements):
+                    complaint_url_el = _find_raise_complaint_url_or_button(dom_elements, clicked_targets)
+                    if complaint_url_el:
+                        target_name = complaint_url_el.get("text") or complaint_url_el.get("href") or "Raise Complaint"
+                        sel = complaint_url_el.get("selector", "")
+                        clicked_targets.add(sel)
+                        clicked_targets.add(target_name)
+                        print(f"[{ticket_id}] 🔍 Citizen logged in: opening complaint form via '{target_name}'...")
+                        update_ticket_status(ticket_id, {
+                            "status": "AGENT_BROWSING_PORTAL",
+                            "agent_telemetry": f"Found URL to raise complaint: '{target_name}'. Opening complaint form..."
+                        })
+                        await _robust_click(page, complaint_url_el, ticket_id)
+                        await asyncio.sleep(2.0)
+                        await _ensure_english_version(page)
+                        continue
+
+                # 5. Non-OTP Credential / Registration detection (only if NO OTP option available)
+                login_reason = _detect_login_or_registration_fields(page.url, dom_elements)
+                if login_reason and not user_login_completed and not _find_otp_trigger_elements(dom_elements):
+                    prompt_msg = f"Portal requires citizen login credentials on {corp_name}. Please complete login on the portal."
+                    print(f"[{ticket_id}] 🛑 {login_reason}: {prompt_msg}")
                     update_ticket_status(ticket_id, {
-                        "status": "AWAITING_OTP",
+                        "status": "AWAITING_HUMAN_ACTION",
+                        "requires_login": True,
                         "auth_prompt": prompt_msg,
-                        "agent_telemetry": f"Portal requires human input: {prompt_msg}"
+                        "agent_telemetry": f"Portal requires citizen credentials ({login_reason}). Waiting for login..."
                     })
 
-                    otp_code = None
-                    for poll_i in range(15):
-                        await asyncio.sleep(2)
-                        record = get_ticket(ticket_id)
-                        if record:
-                            val = record.get("user_provided_otp") or record.get("user_provided_input")
-                            if val:
-                                otp_code = str(val).strip()
-                                print(f"[{ticket_id}] ✅ Human entered requested input: {otp_code}")
+                    login_done = False
+                    for poll_i in range(30):
+                        await asyncio.sleep(2.0)
+                        rec = get_ticket(ticket_id)
+                        if rec and rec.get("user_login_completed"):
+                            login_done = True
+                            break
+                        try:
+                            current_url = page.url
+                            current_dom = await _extract_interactive_elements(page)
+                            if _is_complaint_submission_form(current_dom) or not _detect_login_or_registration_fields(current_url, current_dom):
+                                login_done = True
                                 break
+                        except Exception:
+                            pass
 
-                    if not otp_code:
-                        print(f"[{ticket_id}] ⚠️ Citizen timed out providing input. Transitioning to statutory email dispatch...")
+                    if not login_done:
+                        print(f"[{ticket_id}] ⚠️ Citizen login was not completed. Transitioning to statutory email dispatch...")
                         await browser.close()
-                        await _trigger_email_fallback(ticket_id, form_data, "Citizen timed out providing OTP verification on portal.")
+                        await _trigger_email_fallback(ticket_id, form_data, f"Portal requires citizen login on {corp_name}. Timed out waiting for completion.")
                         return
 
-                    user_provided_otp = otp_code
+                    user_login_completed = True
                     update_ticket_status(ticket_id, {
-                        "status": "RELAYING_OTP",
-                        "user_provided_otp": None,
-                        "user_provided_input": None,
-                        "agent_telemetry": f"Relaying verification code '{otp_code}' to portal..."
+                        "status": "AGENT_BROWSING_PORTAL",
+                        "requires_login": False,
+                        "agent_telemetry": f"Citizen login completed! Looking for URL to raise complaint on {corp_name} portal..."
                     })
+                    await asyncio.sleep(1.0)
                     continue
 
                 prompt = f"""
@@ -1049,12 +1148,10 @@ CRITICAL BEHAVIOR POLICY (NAVIGATE REGARDLESS OF CSS SELECTORS):
 3. POST-LOGIN COMPLAINT URL DISCOVERY (CRITICAL):
    Once the user has completely logged in, look for the URL or link to RAISE / LODGE / REGISTER A COMPLAINT (e.g. 'Register Your Complaint', 'Lodge Grievance', 'Register Complaint', 'Citizen Grievances', 'New Grievance', 'तक्रार').
    Click that URL / link to navigate to the grievance registration form.
-4. CITIZEN LOGIN & REGISTRATION POLICY:
-   - UNDER NO CIRCUMSTANCES should you automatically fill in the mobile number or credentials into login or registration fields.
-   - If the portal presents a mobile number, login, or registration field, you must wait for the user to complete login or registration.
-   - Do NOT generate fill actions for mobile numbers or credentials on login or registration forms.
-   - If online filing strictly requires pre-registered citizen credentials or login that cannot proceed, output:
-     {{"action": "email_fallback", "reason": "Portal requires citizen login/registration"}}.
+4. CITIZEN AUTHENTICATION & OTP POLICY:
+   - If an OTP trigger is available (e.g. Get OTP / Send OTP), fill the citizen's mobile number and trigger OTP dispatch.
+   - Do NOT guess passwords or credentials. If password login is required and no OTP option exists, request email fallback.
+   - Whenever an SMS verification field appears, request human input for the OTP.
 5. HUMAN INPUT: Whenever the portal asks for an SMS verification code (e.g. OTP, verification code, captcha) that only the citizen has received, output:
    {{"action": "request_human_input", "type": "otp", "prompt": "Portal requires SMS verification code sent to your mobile. Please enter it."}}.
    NEVER guess or invent verification codes.
@@ -1095,7 +1192,20 @@ Output strictly valid JSON matching:
                         break
 
                     elif act_type == "fill":
-                        await _robust_fill(page, act, ticket_id, allow_mobile_fill=user_login_completed)
+                        await _robust_fill(page, act, ticket_id, allow_mobile_fill=True)
+                        f_role = (act.get("semantic_role") or "").lower()
+                        f_sel = (act.get("selector") or "").lower()
+                        f_lbl = (act.get("label") or "").lower()
+                        f_val = str(act.get("value") or "").strip()
+                        if f_val:
+                            if f_role in ("name", "citizen_name") or "name" in f_sel or "name" in f_lbl:
+                                submitted_fields["complainant_name"] = f_val
+                            elif f_role == "mobile" or "mobile" in f_sel or "phone" in f_sel or "mobile" in f_lbl:
+                                submitted_fields["mobile_number"] = f_val
+                            elif f_role == "landmark" or "landmark" in f_sel or "location" in f_sel or "landmark" in f_lbl:
+                                submitted_fields["landmark"] = f_val
+                            elif f_role in ("description", "complaint") or "desc" in f_sel or "complaint" in f_sel or "detail" in f_sel:
+                                submitted_fields["description"] = f_val
 
                     elif act_type == "select_option":
                         try:
@@ -1108,6 +1218,8 @@ Output strictly valid JSON matching:
                                     await target_loc.select_option(index=1, timeout=5000)
                                 except Exception:
                                     pass
+                            if val:
+                                submitted_fields["category"] = str(val)
                             print(f"[{ticket_id}] 📋 Selected '{val}' in {selector}")
                         except Exception as sel_err:
                             print(f"[{ticket_id}] Select notice ({selector}): {sel_err}")
@@ -1115,15 +1227,10 @@ Output strictly valid JSON matching:
                     elif act_type == "upload_file":
                         file_input = page.locator(selector if selector else 'input[type="file"]')
                         if await file_input.count() > 0:
-                            if isinstance(local_image_path, list):
-                                valid_paths = [os.path.abspath(p) for p in local_image_path if os.path.exists(p)]
-                            elif isinstance(local_image_path, str) and os.path.exists(local_image_path):
-                                valid_paths = [os.path.abspath(local_image_path)]
-                            else:
-                                valid_paths = []
-
                             if valid_paths:
                                 await file_input.first.set_input_files(valid_paths)
+                                submitted_fields["evidence_count"] = len(valid_paths)
+                                submitted_fields["evidence_files"] = [os.path.basename(p) for p in valid_paths]
                                 print(f"[{ticket_id}] 📎 Attached {len(valid_paths)} photographic evidence file(s)")
 
                     elif act_type == "request_human_input":
@@ -1212,7 +1319,7 @@ Output strictly valid JSON matching:
                 if token_match:
                     ref_id = token_match.group(0)
                 else:
-                    if settings.PORTAL_MODE == "mock":
+                    if settings.PORTAL_MODE == "mock" or "mock-pmc-portal" in str(target_url):
                         ref_id = f"PMC-SW-2026-{ticket_id.upper()}"
                     else:
                         print(f"[{ticket_id}] ⚠️ Online complaint form not completed on portal. Transitioning to statutory email dispatch...")
@@ -1224,10 +1331,14 @@ Output strictly valid JSON matching:
                         )
                         return
 
+            submitted_fields["reference_token"] = ref_id
+            submitted_fields["filed_at"] = time.strftime("%d %b %Y, %I:%M %p")
+
             print(f"[{ticket_id}] 🏁 Filing finalized! Reference Token: {ref_id}\n")
             update_ticket_status(ticket_id, {
                 "status": "SUBMITTED",
                 "municipal_ref_id": ref_id,
+                "filed_fields": submitted_fields,
                 "agent_summary": f"Autonomous AI filing finalized with {corp_name}. Reference Token: {ref_id}"
             })
 

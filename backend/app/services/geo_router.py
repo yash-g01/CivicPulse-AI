@@ -33,11 +33,11 @@ def _slugify(name: str) -> str:
 
 def _fast_bbox_match(lat: float, lng: float) -> str | None:
     """Instant sub-millisecond coordinate bounding-box resolution for demo metros."""
-    # PCMC (Pimpri-Chinchwad, Nigdi, Bhosari, Akurdi, Ravet, Wakad)
+    # PCMC (Pimpri-Chinchwad, Nigdi, Bhosari, Akurdi, Ravet, Wakad - Northwest)
     if 18.58 <= lat <= 18.75 and 73.72 <= lng <= 73.90:
         return "pcmc"
-    # PMC (Pune Central, Shivaji Nagar, Kothrud, Hadapsar, Camp, Katraj)
-    if 18.40 <= lat < 18.58 and 73.70 <= lng <= 74.05:
+    # PMC (Pune Central, Shivaji Nagar, Kothrud, Hadapsar, Camp, Katraj, Viman Nagar, Kharadi, Wagholi)
+    if 18.40 <= lat <= 18.66 and 73.70 <= lng <= 74.08:
         return "pune"
     if 18.90 <= lat <= 19.30 and 72.75 <= lng <= 73.05:
         return "mumbai"
