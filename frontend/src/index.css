@@ -1,0 +1,76 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Fraunces", "Times New Roman", serif;
+  --font-sans: "Sora", ui-sans-serif, system-ui, sans-serif;
+  --color-paper: #efe7d6;
+  --color-paper-deep: #e4d8bf;
+  --color-ink: #1b1712;
+  --color-dust: #6f6556;
+  --color-rule: #c9b896;
+  --color-stamp: #b93a22;
+  --color-stamp-deep: #8e2a18;
+  --color-moss: #275c45;
+  --color-moss-soft: #d7e6dc;
+  --color-gold: #c4a574;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+body::before {
+  content: "";
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  opacity: 0.35;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.28'/%3E%3C/svg%3E");
+}
+
+::selection {
+  background: #b93a22;
+  color: #efe7d6;
+}
+
+input,
+textarea,
+button {
+  font-family: inherit;
+}
+
+.stamp {
+  transform: rotate(-8deg);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  border: 2.5px solid currentColor;
+  padding: 0.35rem 0.55rem;
+  font-weight: 700;
+  font-size: 0.68rem;
+}
+
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgba(185, 58, 34, 0.35);
+  }
+  70% {
+    box-shadow: 0 0 0 12px rgba(185, 58, 34, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(185, 58, 34, 0);
+  }
+}
+
+.live-dot {
+  animation: pulse-ring 1.8s infinite;
+}
