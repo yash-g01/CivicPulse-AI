@@ -63,9 +63,11 @@ button {
   0% {
     box-shadow: 0 0 0 0 rgba(185, 58, 34, 0.35);
   }
+
   70% {
     box-shadow: 0 0 0 12px rgba(185, 58, 34, 0);
   }
+
   100% {
     box-shadow: 0 0 0 0 rgba(185, 58, 34, 0);
   }
@@ -80,6 +82,7 @@ button {
     opacity: 0;
     transform: translateY(12px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -91,6 +94,7 @@ button {
     opacity: 0;
     transform: translateY(-8px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -102,6 +106,7 @@ button {
     opacity: 0;
     transform: scale(0.96);
   }
+
   to {
     opacity: 1;
     transform: scale(1);
@@ -113,10 +118,12 @@ button {
     opacity: 0;
     transform: scale(1.6) rotate(-16deg);
   }
+
   65% {
     opacity: 0.95;
     transform: scale(0.96) rotate(-5deg);
   }
+
   100% {
     opacity: 1;
     transform: scale(1) rotate(-8deg);
@@ -128,13 +135,188 @@ button {
     top: 2%;
     opacity: 0.3;
   }
+
   50% {
     opacity: 0.9;
   }
+
   100% {
     top: 96%;
     opacity: 0.3;
   }
+}
+
+@keyframes viewEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes cardEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(18px) scale(0.985);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes checkPop {
+  0% {
+    transform: scale(0.35) rotate(-30deg);
+    opacity: 0;
+  }
+
+  60% {
+    transform: scale(1.35) rotate(6deg);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+@keyframes modalPop {
+  0% {
+    opacity: 0;
+    transform: scale(0.93) translateY(14px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes sheetUp {
+  0% {
+    opacity: 0;
+    transform: translateY(32px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes alertShudder {
+  0% {
+    opacity: 0;
+    transform: scale(0.97) translateY(-8px);
+  }
+
+  35% {
+    opacity: 1;
+    transform: scale(1.01) translateY(2px);
+  }
+
+  65% {
+    transform: scale(0.99) translateY(-1px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes shimmerSlide {
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes floatGentle {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes radarPing {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(185, 58, 34, 0.45);
+  }
+
+  70% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 10px rgba(185, 58, 34, 0);
+  }
+
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(185, 58, 34, 0);
+  }
+}
+
+.animate-view-enter {
+  animation: viewEnter 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-fade-in,
+.animate-fadeIn {
+  animation: fadeIn 0.24s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-card-enter {
+  animation: cardEnter 0.38s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-check-pop {
+  animation: checkPop 0.32s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+}
+
+.animate-modal-pop,
+.animate-scaleUp {
+  animation: modalPop 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-sheet-up {
+  animation: sheetUp 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-alert-shudder {
+  animation: alertShudder 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-float {
+  animation: floatGentle 3s ease-in-out infinite;
+}
+
+.animate-radar-ping {
+  animation: radarPing 2s infinite cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 .animate-step-enter {
@@ -171,4 +353,26 @@ button {
 
 .animate-accordion-open {
   animation: fadeSlideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.shimmer-loading {
+  background: linear-gradient(90deg, var(--color-paper-deep) 0%, rgba(255, 255, 255, 0.5) 50%, var(--color-paper-deep) 100%);
+  background-size: 200% 100%;
+  animation: shimmerSlide 1.7s infinite linear;
+}
+
+.btn-tactile {
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.btn-tactile:active {
+  transform: scale(0.96);
+}
+
+.interactive-card {
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease;
+}
+
+.interactive-card:hover {
+  transform: translateY(-3px);
 }

@@ -50,10 +50,10 @@ export function OtpSheet({ prompt, onClose, onSubmit }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-40 flex items-end justify-center bg-ink/45 p-4 sm:items-center">
+    <div className="fixed inset-0 z-40 flex items-end justify-center bg-ink/50 p-4 sm:items-center backdrop-blur-xs animate-fade-in">
       <form
         onSubmit={submit}
-        className="w-full max-w-md rounded-[28px] border border-gold bg-paper p-6 shadow-2xl"
+        className="w-full max-w-md rounded-[28px] border border-gold bg-paper p-6 shadow-2xl animate-modal-pop"
       >
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -61,7 +61,11 @@ export function OtpSheet({ prompt, onClose, onSubmit }: Props) {
             <h2 className="mt-1 font-display text-3xl">SMS code</h2>
           </div>
           {onClose && (
-            <button type="button" onClick={onClose} className="rounded-full p-1 text-dust hover:text-ink">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-full p-1 text-dust hover:text-ink transition-colors cursor-pointer active:scale-90"
+            >
               <X size={18} />
             </button>
           )}
@@ -80,17 +84,17 @@ export function OtpSheet({ prompt, onClose, onSubmit }: Props) {
               maxLength={1}
               onChange={(e) => setAt(index, e.target.value)}
               onKeyDown={(e) => onKey(index, e)}
-              className="h-14 w-11 rounded-xl border border-rule bg-paper-deep text-center font-display text-2xl outline-none focus:border-stamp"
+              className="h-14 w-11 rounded-xl border border-rule bg-paper-deep text-center font-display text-2xl outline-none focus:border-stamp focus:scale-105 focus:shadow-xs transition-all duration-150"
             />
           ))}
         </div>
 
-        {error && <p className="mt-3 text-sm text-stamp-deep">{error}</p>}
+        {error && <p className="mt-3 text-sm text-stamp-deep animate-shake-alert">{error}</p>}
 
         <button
           type="submit"
           disabled={busy}
-          className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-ink py-3 text-sm font-semibold text-paper disabled:opacity-60"
+          className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-ink py-3 text-sm font-semibold text-paper disabled:opacity-60 transition-all duration-150 cursor-pointer active:scale-95 shadow-sm hover:shadow"
         >
           <ShieldCheck size={16} />
           {busy ? "Relaying…" : "Hand the code to the agent"}

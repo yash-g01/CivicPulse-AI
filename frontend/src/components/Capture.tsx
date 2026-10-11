@@ -273,19 +273,19 @@ export function Capture({ onFiled, onLookup }: Props) {
         </p>
 
         {/* EVIDENCE PHOTO DROPZONE & PREVIEW (SUPPORTS MULTIPLE IMAGES) */}
-        <div className="relative mt-6 sm:mt-8 flex min-h-[280px] w-full flex-col items-center justify-center overflow-hidden rounded-[28px] border-2 border-dashed border-rule bg-paper-deep/60 text-dust transition hover:border-stamp">
+        <div className="relative mt-6 sm:mt-8 flex min-h-[280px] w-full flex-col items-center justify-center overflow-hidden rounded-[28px] border-2 border-dashed border-rule bg-paper-deep/60 text-dust transition-all duration-300 hover:border-stamp">
           {activePreview ? (
-            <div className="relative h-full min-h-[300px] max-h-[440px] w-full">
+            <div key={activePreview} className="relative h-full min-h-[300px] max-h-[440px] w-full animate-fade-in">
               <img
                 src={activePreview}
                 alt="Selected waste evidence"
-                className={`h-full min-h-[300px] max-h-[440px] w-full object-cover transition ${
+                className={`h-full min-h-[300px] max-h-[440px] w-full object-cover transition-all duration-300 ${
                   isNotGarbage ? "brightness-[0.75] contrast-[1.05]" : ""
                 }`}
               />
 
               {/* Photo count pill */}
-              <div className="absolute top-3 left-3 flex items-center gap-1.5 rounded-full bg-ink/80 px-3 py-1 text-xs font-semibold text-paper shadow-md backdrop-blur">
+              <div className="absolute top-3 left-3 flex items-center gap-1.5 rounded-full bg-ink/80 px-3 py-1 text-xs font-semibold text-paper shadow-md backdrop-blur animate-scale-in">
                 <span>Photo {activeIdx + 1} of {files.length}</span>
               </div>
 
@@ -295,7 +295,7 @@ export function Capture({ onFiled, onLookup }: Props) {
                   type="button"
                   onClick={() => addCameraInputRef.current?.click()}
                   title="Click photo using camera"
-                  className="inline-flex items-center gap-1.5 rounded-full bg-stamp hover:bg-stamp-deep text-paper px-3 py-1.5 text-xs font-semibold shadow-lg backdrop-blur transition active:scale-95"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-stamp hover:bg-stamp-deep text-paper px-3 py-1.5 text-xs font-semibold shadow-lg backdrop-blur transition-all duration-150 active:scale-95"
                 >
                   <Camera size={13} />
                   <span>Camera</span>
@@ -304,7 +304,7 @@ export function Capture({ onFiled, onLookup }: Props) {
                   type="button"
                   onClick={() => setShowAddModal(true)}
                   title="Add more photos"
-                  className="inline-flex items-center gap-1.5 rounded-full bg-ink/85 hover:bg-ink text-paper px-3 py-1.5 text-xs font-semibold shadow-lg backdrop-blur transition active:scale-95"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-ink/85 hover:bg-ink text-paper px-3 py-1.5 text-xs font-semibold shadow-lg backdrop-blur transition-all duration-150 active:scale-95"
                 >
                   <Plus size={13} />
                   <span>Add</span>
@@ -589,7 +589,7 @@ export function Capture({ onFiled, onLookup }: Props) {
         {isNotGarbage && (
           <div
             role="alert"
-            className="mt-5 rounded-[24px] border-2 border-stamp/40 bg-stamp/10 p-5 shadow-sm text-ink animate-fadeIn"
+            className="mt-5 rounded-[24px] border-2 border-stamp/40 bg-stamp/10 p-5 shadow-sm text-ink animate-alert-shudder"
           >
             <div className="flex items-start gap-3.5">
               <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-stamp text-paper shadow-sm">
@@ -600,7 +600,7 @@ export function Capture({ onFiled, onLookup }: Props) {
                   <h3 className="font-display text-lg font-bold text-stamp-deep">
                     Not a picture of garbage
                   </h3>
-                  <span className="stamp border-stamp bg-paper px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-stamp">
+                  <span className="stamp border-stamp bg-paper px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-stamp animate-stamp-slam">
                     Triage Rejected
                   </span>
                 </div>
@@ -617,14 +617,14 @@ export function Capture({ onFiled, onLookup }: Props) {
                   <button
                     type="button"
                     onClick={() => addCameraInputRef.current?.click()}
-                    className="inline-flex items-center gap-1.5 rounded-full bg-stamp px-4 py-2 text-xs font-semibold text-paper transition hover:bg-stamp-deep shadow-sm"
+                    className="inline-flex items-center gap-1.5 rounded-full bg-stamp px-4 py-2 text-xs font-semibold text-paper transition hover:bg-stamp-deep shadow-sm active:scale-95"
                   >
                     <Camera size={14} /> Open Camera
                   </button>
                   <button
                     type="button"
                     onClick={() => setShowAddModal(true)}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-ink bg-paper px-4 py-2 text-xs font-semibold text-ink transition hover:bg-paper-deep shadow-sm"
+                    className="inline-flex items-center gap-1.5 rounded-full border border-ink bg-paper px-4 py-2 text-xs font-semibold text-ink transition hover:bg-paper-deep shadow-sm active:scale-95"
                   >
                     <Plus size={14} /> Add from Gallery
                   </button>
@@ -636,9 +636,9 @@ export function Capture({ onFiled, onLookup }: Props) {
 
         {/* POSITIVE TRIAGE VERIFIED BADGE */}
         {!isNotGarbage && !triageChecking && triageResult?.is_valid_waste && (
-          <div className="mt-4 flex items-center justify-between rounded-2xl border border-moss/40 bg-moss-soft/60 px-4 py-3 text-xs text-moss">
+          <div className="mt-4 flex items-center justify-between rounded-2xl border border-moss/40 bg-moss-soft/60 px-4 py-3 text-xs text-moss animate-scale-in">
             <div className="flex items-center gap-2">
-              <CheckCircle2 size={16} className="shrink-0 text-moss" />
+              <CheckCircle2 size={16} className="shrink-0 text-moss animate-check-pop" />
               <span>
                 <strong>Triage Verified:</strong> Civic waste detected (
                 {triageResult.waste_categories?.map((c) => c.replace(/_/g, " ")).join(", ") || "municipal waste"}
@@ -754,27 +754,30 @@ export function Capture({ onFiled, onLookup }: Props) {
         <button
           type="submit"
           disabled={busy || triageChecking || isNotGarbage}
-          className={`mt-6 w-full rounded-full py-3.5 text-sm font-semibold tracking-wide transition-all duration-200 active:scale-[0.98] cursor-pointer ${
+          className={`mt-6 flex w-full items-center justify-center gap-2 rounded-full py-3.5 text-sm font-semibold tracking-wide transition-all duration-200 active:scale-[0.98] cursor-pointer shadow-sm ${
             isNotGarbage
               ? "bg-rule/70 text-dust cursor-not-allowed border border-rule"
               : "bg-stamp text-paper hover:bg-stamp-deep hover:shadow-xl hover:scale-[1.01] disabled:opacity-60 disabled:hover:scale-100"
           }`}
         >
-          {isNotGarbage
-            ? "Cannot file · Not a picture of garbage"
-            : triageChecking
-              ? "Verifying image triage…"
-              : busy
-                ? "Reading the scene…"
-                : files.length > 1
-                  ? `File this dump (${files.length} photos)`
-                  : "File this dump"}
+          {(busy || triageChecking) && <Loader2 size={16} className="animate-spin text-paper" />}
+          <span>
+            {isNotGarbage
+              ? "Cannot file · Not a picture of garbage"
+              : triageChecking
+                ? "Verifying image triage…"
+                : busy
+                  ? "Reading the scene…"
+                  : files.length > 1
+                    ? `File this dump (${files.length} photos)`
+                    : "File this dump"}
+          </span>
         </button>
 
         <div className="mt-8 border-t border-rule pt-5">
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-dust">Open a case</p>
           <div className="mt-2 flex gap-2">
-            <div className="flex flex-1 items-center gap-2 rounded-2xl border border-rule bg-paper px-3">
+            <div className="flex flex-1 items-center gap-2 rounded-2xl border border-rule bg-paper px-3 focus-within:border-stamp transition-colors">
               <Search size={15} className="text-dust shrink-0" />
               <input
                 value={lookup}
@@ -786,7 +789,7 @@ export function Capture({ onFiled, onLookup }: Props) {
             <button
               type="button"
               onClick={() => lookup.trim() && onLookup(lookup.trim())}
-              className="rounded-2xl border border-ink px-4 text-sm font-medium hover:bg-paper-deep transition"
+              className="rounded-2xl border border-ink px-4 text-sm font-medium hover:bg-paper-deep transition-all duration-150 cursor-pointer active:scale-95"
             >
               Open
             </button>

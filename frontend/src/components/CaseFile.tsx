@@ -135,12 +135,17 @@ export function CaseFile({ ticketId, previewUrl, onHome }: Props) {
   }[meta.tone]
 
   return (
-    <div>
-      <button type="button" onClick={onHome} className="text-xs font-semibold uppercase tracking-[0.18em] text-dust hover:text-ink">
-        ← New intake
+    <div className="space-y-6">
+      <button
+        type="button"
+        onClick={onHome}
+        className="group inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-[0.18em] text-dust hover:text-ink transition cursor-pointer active:scale-95"
+      >
+        <span className="transition-transform duration-200 group-hover:-translate-x-1">←</span>
+        <span>New intake desk</span>
       </button>
 
-      <header className="mt-4 flex flex-wrap items-start justify-between gap-4">
+      <header className="flex flex-wrap items-start justify-between gap-4 border-b border-rule/60 pb-5">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-dust">Case {ticketId}</p>
           <h1 className="mt-1 font-display text-4xl leading-tight">
@@ -148,17 +153,17 @@ export function CaseFile({ ticketId, previewUrl, onHome }: Props) {
           </h1>
           <p className="mt-2 max-w-xl text-sm text-dust">{meta.hint}</p>
         </div>
-        <div className={`stamp ${toneClass}`}>
+        <div className={`stamp ${toneClass} animate-stamp-slam shadow-sm`}>
           {isInFlight(ticket?.status) && <span className="mr-2 inline-block h-2 w-2 rounded-full bg-current live-dot" />}
           {meta.label}
         </div>
       </header>
 
-      {error && <p className="mt-4 text-sm text-stamp-deep">{error}</p>}
+      {error && <p className="text-sm text-stamp-deep animate-shake-alert">{error}</p>}
 
       {/* Ghost-Resolution Fraud Alert Banner */}
       {(ticket?.status === "REOPENED_AUDIT_FAILED" || ticket?.audit?.fraud_detected) && (
-        <section className="mt-6 overflow-hidden rounded-[24px] border-2 border-stamp bg-gradient-to-br from-stamp/15 via-stamp/5 to-paper p-6 shadow-sm">
+        <section className="overflow-hidden rounded-[24px] border-2 border-stamp bg-gradient-to-br from-stamp/15 via-stamp/5 to-paper p-6 shadow-sm animate-alert-shudder">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="flex items-start gap-3.5">
               <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-stamp text-paper">
@@ -230,11 +235,11 @@ export function CaseFile({ ticketId, previewUrl, onHome }: Props) {
 
       {/* Verified Clean Banner */}
       {ticket?.status === "CONFIRMED_CLEAN" && (
-        <section className="mt-6 overflow-hidden rounded-[24px] border-2 border-moss bg-gradient-to-br from-moss/15 via-moss/5 to-paper p-6 shadow-sm">
+        <section className="mt-6 overflow-hidden rounded-[24px] border-2 border-moss bg-gradient-to-br from-moss/15 via-moss/5 to-paper p-6 shadow-sm animate-card-enter">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="flex items-start gap-3.5">
               <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-moss text-paper">
-                <ShieldCheck size={22} />
+                <ShieldCheck size={22} className="animate-check-pop" />
               </span>
               <div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -274,13 +279,15 @@ export function CaseFile({ ticketId, previewUrl, onHome }: Props) {
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
         <div className="space-y-3">
-          <figure className="overflow-hidden rounded-[28px] border border-rule bg-paper-deep">
+          <figure className="overflow-hidden rounded-[28px] border border-rule bg-paper-deep shadow-2xs">
             {allPhotos[activePhotoIdx] ? (
-              <img
-                src={allPhotos[activePhotoIdx]}
-                alt="Evidence"
-                className="aspect-[4/5] w-full object-cover sm:aspect-[4/3]"
-              />
+              <div key={allPhotos[activePhotoIdx]} className="overflow-hidden animate-fade-in">
+                <img
+                  src={allPhotos[activePhotoIdx]}
+                  alt="Evidence"
+                  className="aspect-[4/5] w-full object-cover transition-transform duration-500 ease-out hover:scale-105 sm:aspect-[4/3]"
+                />
+              </div>
             ) : (
               <div className="grid aspect-[4/3] place-items-center text-sm text-dust">Evidence on file</div>
             )}
@@ -296,10 +303,10 @@ export function CaseFile({ ticketId, previewUrl, onHome }: Props) {
                   key={photo}
                   type="button"
                   onClick={() => setActivePhotoIdx(i)}
-                  className={`h-14 w-14 shrink-0 overflow-hidden rounded-xl border-2 transition ${
+                  className={`h-14 w-14 shrink-0 overflow-hidden rounded-xl border-2 transition-all duration-200 cursor-pointer active:scale-95 ${
                     activePhotoIdx === i
-                      ? "border-stamp ring-2 ring-stamp/30 shadow-md"
-                      : "border-rule opacity-70 hover:opacity-100"
+                      ? "border-stamp ring-2 ring-stamp/30 shadow-md scale-105"
+                      : "border-rule opacity-70 hover:opacity-100 hover:scale-102"
                   }`}
                 >
                   <img src={photo} alt={`Evidence ${i + 1}`} className="h-full w-full object-cover" />
@@ -416,9 +423,9 @@ export function CaseFile({ ticketId, previewUrl, onHome }: Props) {
                   type="button"
                   onClick={copyToken}
                   title="Copy reference token"
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-moss/30 bg-paper text-moss transition hover:bg-paper-deep"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-moss/30 bg-paper text-moss transition-all duration-150 hover:bg-paper-deep cursor-pointer active:scale-90"
                 >
-                  {copiedToken ? <Check size={14} className="text-moss" /> : <Copy size={14} />}
+                  {copiedToken ? <Check size={14} className="text-moss animate-check-pop" /> : <Copy size={14} />}
                 </button>
               </div>
               {filedData.filed_at && (

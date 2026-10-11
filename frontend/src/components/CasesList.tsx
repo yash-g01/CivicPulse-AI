@@ -117,16 +117,17 @@ export function CasesList({ onSelectTicket, onNewFiling }: Props) {
   }, [tickets, searchQuery, activeTab])
 
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="space-y-8 animate-view-enter">
       {/* Top Header */}
       <div className="flex flex-wrap items-end justify-between gap-4 border-b border-rule pb-6">
         <div>
           <button
             type="button"
             onClick={onNewFiling}
-            className="text-xs font-semibold uppercase tracking-[0.18em] text-dust hover:text-ink transition cursor-pointer"
+            className="group inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-[0.18em] text-dust hover:text-ink transition cursor-pointer active:scale-95"
           >
-            ← New intake desk
+            <span className="transition-transform duration-200 group-hover:-translate-x-1">←</span>
+            <span>New intake desk</span>
           </button>
           <h1 className="mt-2 font-display text-3xl font-bold tracking-tight text-ink sm:text-4xl">
             Municipal Docket · Filed Cases
@@ -141,17 +142,18 @@ export function CasesList({ onSelectTicket, onNewFiling }: Props) {
             href="/mock-pmc-portal"
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-full border border-rule bg-paper px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-dust hover:text-ink hover:border-ink/30 transition shadow-xs"
+            className="group inline-flex items-center gap-1.5 rounded-full border border-rule bg-paper px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-dust hover:text-ink hover:border-ink/30 transition-all duration-200 shadow-2xs hover:shadow-xs active:scale-95"
           >
-            Mock Portal <ExternalLink size={13} />
+            <span>Mock Portal</span>
+            <ExternalLink size={13} className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
           </a>
           <button
             type="button"
             onClick={() => load(true)}
             disabled={refreshing}
-            className="inline-flex items-center gap-1.5 rounded-full bg-ink px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-paper hover:bg-ink/80 transition cursor-pointer disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-full bg-ink px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-paper hover:bg-ink/80 transition-all duration-200 cursor-pointer disabled:opacity-50 active:scale-95 shadow-2xs hover:shadow-sm"
           >
-            <RefreshCw size={13} className={refreshing ? "animate-spin" : ""} />
+            <RefreshCw size={13} className={refreshing ? "animate-spin" : "transition-transform group-hover:rotate-180"} />
             {refreshing ? "Refreshing…" : "Sync"}
           </button>
         </div>
@@ -162,20 +164,23 @@ export function CasesList({ onSelectTicket, onNewFiling }: Props) {
         <button
           type="button"
           onClick={() => setActiveTab("ALL")}
-          className={`rounded-2xl border p-4 text-left transition cursor-pointer ${activeTab === "ALL"
-              ? "border-ink bg-ink text-paper shadow-sm"
-              : "border-rule bg-paper hover:border-ink/30"
-            }`}
+          className={`rounded-2xl border p-4 text-left transition-all duration-200 cursor-pointer active:scale-95 ${
+            activeTab === "ALL"
+              ? "border-ink bg-ink text-paper shadow-md scale-[1.02]"
+              : "border-rule bg-paper hover:border-ink/40 hover:-translate-y-0.5 hover:shadow-xs"
+          }`}
         >
           <p
-            className={`text-[10px] font-bold uppercase tracking-[0.18em] ${activeTab === "ALL" ? "text-paper/80" : "text-dust"
-              }`}
+            className={`text-[10px] font-bold uppercase tracking-[0.18em] ${
+              activeTab === "ALL" ? "text-paper/80" : "text-dust"
+            }`}
           >
             Total Cases
           </p>
           <p
-            className={`mt-1 font-display text-2xl font-bold ${activeTab === "ALL" ? "text-paper" : "text-ink"
-              }`}
+            className={`mt-1 font-display text-2xl font-bold transition-transform ${
+              activeTab === "ALL" ? "text-paper scale-105 origin-left" : "text-ink"
+            }`}
           >
             {stats.total}
           </p>
@@ -184,20 +189,23 @@ export function CasesList({ onSelectTicket, onNewFiling }: Props) {
         <button
           type="button"
           onClick={() => setActiveTab("SUBMITTED")}
-          className={`rounded-2xl border p-4 text-left transition cursor-pointer ${activeTab === "SUBMITTED"
-              ? "border-moss bg-moss text-paper shadow-sm"
-              : "border-rule bg-paper hover:border-moss/40"
-            }`}
+          className={`rounded-2xl border p-4 text-left transition-all duration-200 cursor-pointer active:scale-95 ${
+            activeTab === "SUBMITTED"
+              ? "border-moss bg-moss text-paper shadow-md scale-[1.02]"
+              : "border-rule bg-paper hover:border-moss/40 hover:-translate-y-0.5 hover:shadow-xs"
+          }`}
         >
           <p
-            className={`text-[10px] font-bold uppercase tracking-[0.18em] ${activeTab === "SUBMITTED" ? "text-paper/80" : "text-moss"
-              }`}
+            className={`text-[10px] font-bold uppercase tracking-[0.18em] ${
+              activeTab === "SUBMITTED" ? "text-paper/80" : "text-moss"
+            }`}
           >
             Filed on Portal
           </p>
           <p
-            className={`mt-1 font-display text-2xl font-bold ${activeTab === "SUBMITTED" ? "text-paper" : "text-moss"
-              }`}
+            className={`mt-1 font-display text-2xl font-bold transition-transform ${
+              activeTab === "SUBMITTED" ? "text-paper scale-105 origin-left" : "text-moss"
+            }`}
           >
             {stats.portal}
           </p>
@@ -206,20 +214,23 @@ export function CasesList({ onSelectTicket, onNewFiling }: Props) {
         <button
           type="button"
           onClick={() => setActiveTab("GHOST_AUDIT")}
-          className={`rounded-2xl border p-4 text-left transition cursor-pointer ${activeTab === "GHOST_AUDIT"
-              ? "border-stamp bg-stamp text-paper shadow-sm"
-              : "border-rule bg-paper hover:border-stamp/40"
-            }`}
+          className={`rounded-2xl border p-4 text-left transition-all duration-200 cursor-pointer active:scale-95 ${
+            activeTab === "GHOST_AUDIT"
+              ? "border-stamp bg-stamp text-paper shadow-md scale-[1.02]"
+              : "border-rule bg-paper hover:border-stamp/40 hover:-translate-y-0.5 hover:shadow-xs"
+          }`}
         >
           <p
-            className={`text-[10px] font-bold uppercase tracking-[0.18em] ${activeTab === "GHOST_AUDIT" ? "text-paper/80" : "text-stamp"
-              }`}
+            className={`text-[10px] font-bold uppercase tracking-[0.18em] ${
+              activeTab === "GHOST_AUDIT" ? "text-paper/80" : "text-stamp"
+            }`}
           >
             Ghost-Resolved ⚠️
           </p>
           <p
-            className={`mt-1 font-display text-2xl font-bold ${activeTab === "GHOST_AUDIT" ? "text-paper" : "text-stamp"
-              }`}
+            className={`mt-1 font-display text-2xl font-bold transition-transform ${
+              activeTab === "GHOST_AUDIT" ? "text-paper scale-105 origin-left" : "text-stamp"
+            }`}
           >
             {stats.ghost}
           </p>
@@ -228,20 +239,23 @@ export function CasesList({ onSelectTicket, onNewFiling }: Props) {
         <button
           type="button"
           onClick={() => setActiveTab("VERIFIED_CLEAN")}
-          className={`rounded-2xl border p-4 text-left transition cursor-pointer ${activeTab === "VERIFIED_CLEAN"
-              ? "border-moss bg-moss text-paper shadow-sm"
-              : "border-rule bg-paper hover:border-moss/40"
-            }`}
+          className={`rounded-2xl border p-4 text-left transition-all duration-200 cursor-pointer active:scale-95 ${
+            activeTab === "VERIFIED_CLEAN"
+              ? "border-moss bg-moss text-paper shadow-md scale-[1.02]"
+              : "border-rule bg-paper hover:border-moss/40 hover:-translate-y-0.5 hover:shadow-xs"
+          }`}
         >
           <p
-            className={`text-[10px] font-bold uppercase tracking-[0.18em] ${activeTab === "VERIFIED_CLEAN" ? "text-paper/80" : "text-moss"
-              }`}
+            className={`text-[10px] font-bold uppercase tracking-[0.18em] ${
+              activeTab === "VERIFIED_CLEAN" ? "text-paper/80" : "text-moss"
+            }`}
           >
             Verified Clean ✓
           </p>
           <p
-            className={`mt-1 font-display text-2xl font-bold ${activeTab === "VERIFIED_CLEAN" ? "text-paper" : "text-moss"
-              }`}
+            className={`mt-1 font-display text-2xl font-bold transition-transform ${
+              activeTab === "VERIFIED_CLEAN" ? "text-paper scale-105 origin-left" : "text-moss"
+            }`}
           >
             {stats.clean}
           </p>
@@ -250,20 +264,23 @@ export function CasesList({ onSelectTicket, onNewFiling }: Props) {
         <button
           type="button"
           onClick={() => setActiveTab("EMAIL")}
-          className={`rounded-2xl border p-4 text-left transition cursor-pointer ${activeTab === "EMAIL"
-              ? "border-gold bg-ink text-paper shadow-sm"
-              : "border-rule bg-paper hover:border-gold/40"
-            }`}
+          className={`rounded-2xl border p-4 text-left transition-all duration-200 cursor-pointer active:scale-95 ${
+            activeTab === "EMAIL"
+              ? "border-gold bg-ink text-paper shadow-md scale-[1.02]"
+              : "border-rule bg-paper hover:border-gold/40 hover:-translate-y-0.5 hover:shadow-xs"
+          }`}
         >
           <p
-            className={`text-[10px] font-bold uppercase tracking-[0.18em] ${activeTab === "EMAIL" ? "text-gold" : "text-dust"
-              }`}
+            className={`text-[10px] font-bold uppercase tracking-[0.18em] ${
+              activeTab === "EMAIL" ? "text-gold" : "text-dust"
+            }`}
           >
             Statutory Mail
           </p>
           <p
-            className={`mt-1 font-display text-2xl font-bold ${activeTab === "EMAIL" ? "text-paper" : "text-ink"
-              }`}
+            className={`mt-1 font-display text-2xl font-bold transition-transform ${
+              activeTab === "EMAIL" ? "text-paper scale-105 origin-left" : "text-ink"
+            }`}
           >
             {stats.email}
           </p>
@@ -297,40 +314,55 @@ export function CasesList({ onSelectTicket, onNewFiling }: Props) {
           <button
             type="button"
             onClick={() => setActiveTab("ALL")}
-            className={`rounded-full px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition cursor-pointer ${activeTab === "ALL" ? "bg-ink text-paper" : "bg-paper-deep text-dust hover:text-ink"
-              }`}
+            className={`rounded-full px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer active:scale-95 ${
+              activeTab === "ALL"
+                ? "bg-ink text-paper shadow-xs scale-105"
+                : "bg-paper-deep text-dust hover:text-ink hover:bg-paper-deep/80"
+            }`}
           >
             All ({stats.total})
           </button>
           <button
             type="button"
             onClick={() => setActiveTab("SUBMITTED")}
-            className={`rounded-full px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition cursor-pointer ${activeTab === "SUBMITTED" ? "bg-moss text-paper" : "bg-paper-deep text-dust hover:text-ink"
-              }`}
+            className={`rounded-full px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer active:scale-95 ${
+              activeTab === "SUBMITTED"
+                ? "bg-moss text-paper shadow-xs scale-105"
+                : "bg-paper-deep text-dust hover:text-ink hover:bg-paper-deep/80"
+            }`}
           >
             Portal Filed ({stats.portal})
           </button>
           <button
             type="button"
             onClick={() => setActiveTab("GHOST_AUDIT")}
-            className={`rounded-full px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition cursor-pointer ${activeTab === "GHOST_AUDIT" ? "bg-stamp text-paper" : "bg-stamp/10 text-stamp hover:bg-stamp/20"
-              }`}
+            className={`rounded-full px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer active:scale-95 ${
+              activeTab === "GHOST_AUDIT"
+                ? "bg-stamp text-paper shadow-xs scale-105"
+                : "bg-stamp/10 text-stamp hover:bg-stamp/20"
+            }`}
           >
             Ghost-Resolved ⚠️ ({stats.ghost})
           </button>
           <button
             type="button"
             onClick={() => setActiveTab("VERIFIED_CLEAN")}
-            className={`rounded-full px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition cursor-pointer ${activeTab === "VERIFIED_CLEAN" ? "bg-moss text-paper" : "bg-moss/10 text-moss hover:bg-moss/20"
-              }`}
+            className={`rounded-full px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer active:scale-95 ${
+              activeTab === "VERIFIED_CLEAN"
+                ? "bg-moss text-paper shadow-xs scale-105"
+                : "bg-moss/10 text-moss hover:bg-moss/20"
+            }`}
           >
             Verified Clean ✓ ({stats.clean})
           </button>
           <button
             type="button"
             onClick={() => setActiveTab("EMAIL")}
-            className={`rounded-full px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition cursor-pointer ${activeTab === "EMAIL" ? "bg-ink text-paper" : "bg-paper-deep text-dust hover:text-ink"
-              }`}
+            className={`rounded-full px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer active:scale-95 ${
+              activeTab === "EMAIL"
+                ? "bg-ink text-paper shadow-xs scale-105"
+                : "bg-paper-deep text-dust hover:text-ink hover:bg-paper-deep/80"
+            }`}
           >
             Emailed ({stats.email})
           </button>
@@ -338,7 +370,7 @@ export function CasesList({ onSelectTicket, onNewFiling }: Props) {
       </div>
 
       {error && (
-        <div className="rounded-2xl border border-stamp/30 bg-stamp/10 p-4 text-xs font-semibold text-stamp-deep">
+        <div className="rounded-2xl border border-stamp/30 bg-stamp/10 p-4 text-xs font-semibold text-stamp-deep animate-shake-alert">
           {error}
         </div>
       )}
@@ -347,10 +379,10 @@ export function CasesList({ onSelectTicket, onNewFiling }: Props) {
       {loading && (
         <div className="grid gap-4 sm:grid-cols-2">
           {[1, 2, 3, 4].map((n) => (
-            <div key={n} className="animate-pulse rounded-[24px] border border-rule bg-paper p-5 space-y-4">
-              <div className="h-4 w-1/3 rounded bg-paper-deep" />
-              <div className="h-6 w-2/3 rounded bg-paper-deep" />
-              <div className="h-24 rounded-xl bg-paper-deep" />
+            <div key={n} className="rounded-[24px] border border-rule bg-paper p-5 space-y-4 shadow-xs">
+              <div className="h-4 w-1/3 rounded-lg shimmer-loading" />
+              <div className="h-6 w-2/3 rounded-lg shimmer-loading" />
+              <div className="h-28 rounded-2xl shimmer-loading" />
             </div>
           ))}
         </div>
@@ -358,8 +390,8 @@ export function CasesList({ onSelectTicket, onNewFiling }: Props) {
 
       {/* Empty State */}
       {!loading && filtered.length === 0 && (
-        <div className="rounded-[28px] border border-dashed border-rule bg-paper-deep/60 p-12 text-center">
-          <FileText size={32} className="mx-auto text-dust" />
+        <div className="rounded-[28px] border border-dashed border-rule bg-paper-deep/60 p-12 text-center animate-scale-in">
+          <FileText size={36} className="mx-auto text-dust animate-float" />
           <h3 className="mt-3 font-display text-xl font-semibold text-ink">No cases found</h3>
           <p className="mt-1 text-xs text-dust">
             {searchQuery
@@ -369,7 +401,7 @@ export function CasesList({ onSelectTicket, onNewFiling }: Props) {
           <button
             type="button"
             onClick={onNewFiling}
-            className="mt-5 inline-flex items-center gap-2 rounded-full bg-stamp px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.16em] text-paper hover:bg-stamp/90 transition cursor-pointer"
+            className="mt-5 inline-flex items-center gap-2 rounded-full bg-stamp px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.16em] text-paper hover:bg-stamp-deep transition-all duration-200 cursor-pointer shadow-sm hover:shadow active:scale-95"
           >
             Create New Filing
           </button>
@@ -379,7 +411,7 @@ export function CasesList({ onSelectTicket, onNewFiling }: Props) {
       {/* Case Cards Grid */}
       {!loading && filtered.length > 0 && (
         <div className="grid gap-5 sm:grid-cols-2">
-          {filtered.map((ticket) => {
+          {filtered.map((ticket, idx) => {
             const tid = ticket.ticket_id || ticket.PK?.replace("TICKET#", "") || "UNKNOWN"
             const token =
               ticket.municipal_ref_id ||
@@ -413,8 +445,9 @@ export function CasesList({ onSelectTicket, onNewFiling }: Props) {
 
             return (
               <article
-                key={tid}
-                className={`flex flex-col justify-between overflow-hidden rounded-[26px] border bg-paper p-5 transition-all shadow-xs hover:shadow-md ${toneBorder}`}
+                key={`${tid}-${activeTab}`}
+                style={{ animationDelay: `${Math.min(idx * 50, 400)}ms` }}
+                className={`group flex flex-col justify-between overflow-hidden rounded-[26px] border bg-paper p-5 transition-all duration-300 ease-out shadow-2xs hover:shadow-xl hover:-translate-y-1.5 ${toneBorder} animate-card-enter`}
               >
                 <div>
                   {/* Card Header: Token & Status Badge */}
@@ -431,22 +464,23 @@ export function CasesList({ onSelectTicket, onNewFiling }: Props) {
                           type="button"
                           onClick={() => copyText(token, tid)}
                           title="Copy reference token"
-                          className="inline-flex h-6 w-6 items-center justify-center rounded-md border border-rule bg-paper-deep text-dust hover:text-ink transition cursor-pointer"
+                          className="inline-flex h-6 w-6 items-center justify-center rounded-md border border-rule bg-paper-deep text-dust hover:text-ink transition cursor-pointer active:scale-90"
                         >
-                          {copiedId === tid ? <Check size={12} className="text-moss" /> : <Copy size={12} />}
+                          {copiedId === tid ? <Check size={12} className="text-moss animate-check-pop" /> : <Copy size={12} />}
                         </button>
                       </div>
                     </div>
 
                     <div
-                      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${isGhost
-                        ? "bg-stamp/15 text-stamp-deep"
-                        : isClean
-                          ? "bg-moss/15 text-moss"
-                          : isEmail
-                            ? "bg-ink/10 text-ink"
-                            : "bg-paper-deep text-dust"
-                        }`}
+                      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition-all duration-200 ${
+                        isGhost
+                          ? "bg-stamp/15 text-stamp-deep"
+                          : isClean
+                            ? "bg-moss/15 text-moss"
+                            : isEmail
+                              ? "bg-ink/10 text-ink"
+                              : "bg-paper-deep text-dust"
+                      }`}
                     >
                       {isInFlight(ticket.status) && (
                         <span className="h-1.5 w-1.5 rounded-full bg-current animate-pulse" />
@@ -462,7 +496,7 @@ export function CasesList({ onSelectTicket, onNewFiling }: Props) {
                       <img
                         src={beforeThumb}
                         alt="Citizen complaint evidence"
-                        className="h-full w-full object-cover"
+                        className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
                         onError={(e) => {
                           ; (e.target as HTMLImageElement).src = getFullApiUrl("/api/v1/mock/sample-image/dump")
                         }}
@@ -477,7 +511,7 @@ export function CasesList({ onSelectTicket, onNewFiling }: Props) {
                         <img
                           src={afterThumb}
                           alt="Field resolution claim"
-                          className="h-full w-full object-cover"
+                          className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
                           onError={(e) => {
                             ; (e.target as HTMLImageElement).src = getFullApiUrl(
                               isGhost ? "/api/v1/mock/sample-image/fake_clean" : "/api/v1/mock/sample-image/cleaned"
@@ -485,8 +519,9 @@ export function CasesList({ onSelectTicket, onNewFiling }: Props) {
                           }}
                         />
                         <figcaption
-                          className={`absolute bottom-0 inset-x-0 py-0.5 text-center text-[9px] font-bold uppercase tracking-wider text-paper ${isGhost ? "bg-stamp" : "bg-moss"
-                            }`}
+                          className={`absolute bottom-0 inset-x-0 py-0.5 text-center text-[9px] font-bold uppercase tracking-wider text-paper ${
+                            isGhost ? "bg-stamp" : "bg-moss"
+                          }`}
                         >
                           {isGhost ? "Ghost Claim" : "Clean Claim"}
                         </figcaption>
@@ -512,7 +547,7 @@ export function CasesList({ onSelectTicket, onNewFiling }: Props) {
 
                   {/* Ghost-Resolution Alert Banner */}
                   {isGhost && (
-                    <div className="mt-4 rounded-xl border border-stamp/20 bg-stamp/10 p-3 text-xs">
+                    <div className="mt-4 rounded-xl border border-stamp/20 bg-stamp/10 p-3 text-xs animate-alert-shudder">
                       <p className="flex items-center gap-1.5 font-bold text-stamp-deep">
                         <ShieldAlert size={14} className="shrink-0" />
                         Ghost-Resolution Fraud Flagged
@@ -526,7 +561,7 @@ export function CasesList({ onSelectTicket, onNewFiling }: Props) {
 
                   {/* Verified Clean Banner */}
                   {isClean && (
-                    <div className="mt-4 rounded-xl border border-moss/20 bg-moss/10 p-3 text-xs">
+                    <div className="mt-4 rounded-xl border border-moss/20 bg-moss/10 p-3 text-xs animate-scale-in">
                       <p className="flex items-center gap-1.5 font-bold text-moss">
                         <ShieldCheck size={14} className="shrink-0" />
                         Cleanup Verified by Vision AI
@@ -540,7 +575,7 @@ export function CasesList({ onSelectTicket, onNewFiling }: Props) {
 
                   {/* Statutory Mail Callout */}
                   {isEmail && ticket.email_dispatch && (
-                    <div className="mt-4 rounded-xl border border-gold/40 bg-paper-deep p-3 text-xs">
+                    <div className="mt-4 rounded-xl border border-gold/40 bg-paper-deep p-3 text-xs animate-scale-in">
                       <p className="flex items-center gap-1.5 font-bold text-ink">
                         <Mail size={14} className="shrink-0 text-dust" />
                         Statutory Email Dossier Compiled
@@ -563,16 +598,17 @@ export function CasesList({ onSelectTicket, onNewFiling }: Props) {
                       href={`/mock-pmc-portal#track`}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center gap-1 rounded-full border border-rule px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-dust hover:text-ink hover:border-ink/30 transition cursor-pointer"
+                      className="inline-flex items-center gap-1 rounded-full border border-rule px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-dust hover:text-ink hover:border-ink/30 transition-all duration-150 cursor-pointer active:scale-95"
                     >
                       Audit on Portal ↗
                     </a>
                     <button
                       type="button"
                       onClick={() => onSelectTicket(tid)}
-                      className="inline-flex items-center gap-1 rounded-full bg-ink px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-paper hover:bg-ink/80 transition cursor-pointer"
+                      className="group/btn inline-flex items-center gap-1 rounded-full bg-ink px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-paper hover:bg-ink/85 transition-all duration-150 cursor-pointer active:scale-95 shadow-2xs hover:shadow-xs"
                     >
-                      Case File <ArrowRight size={12} />
+                      <span>Case File</span>
+                      <ArrowRight size={12} className="transition-transform group-hover/btn:translate-x-1" />
                     </button>
                   </div>
                 </div>

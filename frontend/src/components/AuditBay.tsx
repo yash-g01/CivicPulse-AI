@@ -40,7 +40,7 @@ export function AuditBay({ ticketId, beforeUrl, beforePreview, afterUrl, audit, 
   const clean = audit && audit.debris_cleared && audit.is_same_scene && !audit.fraud_detected
 
   return (
-    <section className="mt-8 rounded-[28px] border border-rule p-5">
+    <section className="mt-8 rounded-[28px] border border-rule p-5 shadow-2xs animate-card-enter">
       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-dust">Ghost-resolution check</p>
       <h3 className="mt-1 font-display text-2xl">Did they actually clear it?</h3>
       <p className="mt-2 max-w-2xl text-sm text-dust">
@@ -48,9 +48,13 @@ export function AuditBay({ ticketId, beforeUrl, beforePreview, afterUrl, audit, 
       </p>
 
       <div className="mt-5 grid gap-4 sm:grid-cols-2">
-        <figure className="overflow-hidden rounded-2xl border border-rule bg-paper-deep">
-          {resolvedBefore ? (
-            <img src={resolvedBefore} alt="Original complaint" className="h-56 w-full object-cover" />
+        <figure className="group overflow-hidden rounded-2xl border border-rule bg-paper-deep shadow-2xs">
+          {(beforePreview || beforeUrl) ? (
+            <img
+              src={beforePreview || beforeUrl}
+              alt="Original complaint"
+              className="h-56 w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+            />
           ) : (
             <div className="grid h-56 place-items-center text-sm text-dust">Original evidence</div>
           )}
@@ -59,13 +63,17 @@ export function AuditBay({ ticketId, beforeUrl, beforePreview, afterUrl, audit, 
           </figcaption>
         </figure>
 
-        <label className="relative overflow-hidden rounded-2xl border border-dashed border-rule bg-paper-deep">
-          {resolvedAfter ? (
-            <img src={resolvedAfter} alt="Claimed cleanup" className="h-56 w-full object-cover" />
+        <label className="group relative overflow-hidden rounded-2xl border border-dashed border-rule bg-paper-deep transition-all duration-200 hover:border-stamp cursor-pointer active:scale-98 shadow-2xs">
+          {(afterPreview || afterUrl) ? (
+            <img
+              src={afterPreview || afterUrl}
+              alt="Claimed cleanup"
+              className="h-56 w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+            />
           ) : (
             <div className="grid h-56 place-items-center px-4 text-center text-sm text-dust">
               <span className="flex flex-col items-center gap-2">
-                <Upload size={18} />
+                <Upload size={18} className={busy ? "animate-spin text-stamp" : "text-dust animate-float"} />
                 {busy ? "Comparing scenes…" : "Drop the cleanup claim"}
               </span>
             </div>
@@ -77,20 +85,20 @@ export function AuditBay({ ticketId, beforeUrl, beforePreview, afterUrl, audit, 
         </label>
       </div>
 
-      {error && <p className="mt-3 text-sm text-stamp-deep">{error}</p>}
+      {error && <p className="mt-3 text-sm text-stamp-deep animate-shake-alert">{error}</p>}
 
       {audit && (
         <div
-          className={`mt-5 rounded-2xl px-4 py-4 ${
+          className={`mt-5 rounded-2xl px-4 py-4 transition-all ${
             fraud
-              ? "bg-stamp/10 text-stamp-deep"
+              ? "bg-stamp/10 text-stamp-deep animate-alert-shudder border border-stamp/20"
               : clean
-                ? "bg-moss-soft text-moss"
-                : "bg-paper-deep text-ink"
+                ? "bg-moss-soft text-moss animate-scale-in border border-moss/30"
+                : "bg-paper-deep text-ink animate-fade-in border border-rule"
           }`}
         >
           <p className="flex items-center gap-2 text-sm font-semibold">
-            {fraud ? <ShieldAlert size={16} /> : <ShieldCheck size={16} />}
+            {fraud ? <ShieldAlert size={16} /> : <ShieldCheck size={16} className="animate-check-pop" />}
             {fraud ? "This does not look like a real cleanup." : "Cleanup holds up against the original scene."}
           </p>
           <p className="mt-2 text-sm leading-relaxed opacity-90">{audit.discrepancy_notes}</p>
