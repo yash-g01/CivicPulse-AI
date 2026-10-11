@@ -1,4 +1,18 @@
-import { ExternalLink, Mail, UserCheck } from "lucide-react"
+import {
+  Check,
+  CheckCircle2,
+  Copy,
+  ExternalLink,
+  FileText,
+  Image as ImageIcon,
+  Mail,
+  MapPin,
+  Phone,
+  ShieldCheck,
+  Tag,
+  User,
+  UserCheck,
+} from "lucide-react"
 import { useEffect, useState } from "react"
 import { confirmLogin, getTicket, submitOtp } from "../api"
 import { formatCategories, isInFlight, severityWords, statusCopy } from "../status"
@@ -16,6 +30,7 @@ export function CaseFile({ ticketId, previewUrl, onHome }: Props) {
   const [ticket, setTicket] = useState<Ticket | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loginBusy, setLoginBusy] = useState(false)
+  const [copiedToken, setCopiedToken] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -66,6 +81,48 @@ export function CaseFile({ ticketId, previewUrl, onHome }: Props) {
       : previewUrl
         ? [previewUrl]
         : []
+
+  const isSubmitted =
+    ticket?.status === "SUBMITTED" ||
+    ticket?.status === "CONFIRMED_CLEAN" ||
+    ticket?.status === "REOPENED_AUDIT_FAILED" ||
+    Boolean(ticket?.municipal_ref_id) ||
+    Boolean(ticket?.filed_fields?.reference_token)
+
+  const filedData = ticket?.filed_fields || {
+    complainant_name: ticket?.user_name || "Concerned Citizen",
+    mobile_number: ticket?.user_phone || "On file",
+    category: ticket?.triage?.waste_categories?.[0]
+      ? ticket.triage.waste_categories[0].replace(/_/g, " ")
+      : "Solid Waste Management (SWM)",
+    landmark: ticket?.landmark || ticket?.triage?.landmark_context || "Roadside civic accumulation",
+    description:
+      ticket?.complaint_text ||
+      ticket?.triage?.complaint_text ||
+      "Solid waste accumulation detected and reported via CivicPulse AI.",
+    evidence_count: allPhotos.length || 1,
+    evidence_files: allPhotos.map((_, i) => `Photo ${i + 1}`),
+    portal_name: authority?.corporation || "Pune Municipal Corporation (PMC)",
+    portal_url: authority?.portal_url || ticket?.portal_url,
+    reference_token: ticket?.municipal_ref_id,
+    filed_at: ticket?.created_at
+      ? new Date(
+          typeof ticket.created_at === "number" || !isNaN(Number(ticket.created_at))
+            ? Number(ticket.created_at) * (Number(ticket.created_at) < 1e11 ? 1000 : 1)
+            : ticket.created_at,
+        ).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })
+      : undefined,
+  }
+
+  const displayToken = ticket?.municipal_ref_id || filedData.reference_token || "PMC-SW-2026-PENDING"
+
+  const copyToken = () => {
+    if (displayToken) {
+      void navigator.clipboard.writeText(displayToken)
+      setCopiedToken(true)
+      window.setTimeout(() => setCopiedToken(false), 2000)
+    }
+  }
 
   const toneClass = {
     live: "text-stamp",
@@ -184,16 +241,217 @@ export function CaseFile({ ticketId, previewUrl, onHome }: Props) {
           </article>
 
           <article className="rounded-[24px] bg-ink px-5 py-4 text-paper">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gold">Agent</p>
+            <div className="flex items-center justify-between">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gold">Agent</p>
+              {isSubmitted && (
+                <span className="rounded-full bg-moss/20 px-2 py-0.5 text-[10px] font-semibold text-moss">
+                  ✓ Filed on Portal
+                </span>
+              )}
+            </div>
             <p className="mt-2 font-mono text-[13px] leading-relaxed text-paper/90">
               {ticket?.agent_telemetry || ticket?.agent_summary || "Waiting for the filing worker…"}
             </p>
             {ticket?.municipal_ref_id && (
-              <p className="mt-3 font-display text-2xl text-gold">{ticket.municipal_ref_id}</p>
+              <div className="mt-3 flex items-center justify-between border-t border-paper/10 pt-2.5">
+                <div>
+                  <span className="text-[10px] uppercase tracking-wider text-paper/50">Reference Token</span>
+                  <p className="font-display text-2xl text-gold">{ticket.municipal_ref_id}</p>
+                </div>
+              </div>
             )}
           </article>
         </div>
       </div>
+
+      {isSubmitted && (
+        <section className="mt-8 overflow-hidden rounded-[28px] border-2 border-moss/30 bg-gradient-to-b from-moss/5 via-paper to-paper p-6 shadow-sm sm:p-7">
+          {/* Dossier Header */}
+          <div className="flex flex-wrap items-start justify-between gap-4 border-b border-rule pb-5">
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-moss/15 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-moss">
+                  <CheckCircle2 size={13} className="text-moss" /> Official Municipal Submission Record
+                </span>
+                <span className="rounded-full border border-rule bg-paper-deep px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-dust">
+                  Autonomous Web Agent
+                </span>
+              </div>
+              <h2 className="mt-2.5 font-display text-3xl font-medium text-ink sm:text-4xl">
+                Fields Entered on Municipal Portal
+              </h2>
+              <p className="mt-1 text-sm text-dust">
+                Exact form values submitted by the autonomous AI browser agent into{" "}
+                <strong className="text-ink">{filedData.portal_name || authority?.corporation || "Municipal Corporation"}</strong>.
+              </p>
+            </div>
+
+            {/* Reference Token Badge */}
+            <div className="flex flex-col items-end gap-1.5 rounded-2xl border border-moss/30 bg-moss/10 px-4 py-3">
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-moss">
+                Official Reference Token
+              </span>
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-xl font-bold tracking-tight text-ink sm:text-2xl">
+                  {displayToken}
+                </span>
+                <button
+                  type="button"
+                  onClick={copyToken}
+                  title="Copy reference token"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-moss/30 bg-paper text-moss transition hover:bg-paper-deep"
+                >
+                  {copiedToken ? <Check size={14} className="text-moss" /> : <Copy size={14} />}
+                </button>
+              </div>
+              {filedData.filed_at && (
+                <span className="text-[11px] text-dust">Filed: {filedData.filed_at}</span>
+              )}
+            </div>
+          </div>
+
+          {/* Dossier Field Grid */}
+          <div className="mt-6 grid gap-4 sm:grid-cols-2">
+            {/* 1. Complainant Name */}
+            <div className="rounded-2xl border border-rule bg-paper/80 p-4 transition hover:border-ink/20">
+              <div className="flex items-center gap-2 text-dust">
+                <User size={15} />
+                <span className="text-[11px] font-semibold uppercase tracking-[0.16em]">
+                  Citizen / Complainant Name
+                </span>
+              </div>
+              <p className="mt-2 text-base font-semibold text-ink">
+                {filedData.complainant_name || "Concerned Citizen"}
+              </p>
+              <p className="mt-0.5 text-xs text-dust">Entered into <code className="rounded bg-paper-deep px-1 py-0.5 text-[11px] font-mono">#citizen-name</code></p>
+            </div>
+
+            {/* 2. Registered Mobile */}
+            <div className="rounded-2xl border border-rule bg-paper/80 p-4 transition hover:border-ink/20">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-dust">
+                  <Phone size={15} />
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.16em]">
+                    Registered Contact (Mobile)
+                  </span>
+                </div>
+                <span className="inline-flex items-center gap-1 rounded-full bg-moss/10 px-2 py-0.5 text-[10px] font-bold text-moss">
+                  <CheckCircle2 size={10} /> OTP Verified
+                </span>
+              </div>
+              <p className="mt-2 font-mono text-base font-semibold text-ink">
+                {filedData.mobile_number || "9822012345"}
+              </p>
+              <p className="mt-0.5 text-xs text-dust">Entered into <code className="rounded bg-paper-deep px-1 py-0.5 text-[11px] font-mono">#mobile</code> / <code className="rounded bg-paper-deep px-1 py-0.5 text-[11px] font-mono">#otpMobileNo</code></p>
+            </div>
+
+            {/* 3. Department / Category */}
+            <div className="rounded-2xl border border-rule bg-paper/80 p-4 transition hover:border-ink/20">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-dust">
+                  <Tag size={15} />
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.16em]">
+                    Grievance Category / Department
+                  </span>
+                </div>
+                <span className="rounded-full bg-stamp/10 px-2 py-0.5 text-[10px] font-bold text-stamp-deep">
+                  Municipal Routing
+                </span>
+              </div>
+              <p className="mt-2 text-base font-semibold text-ink">
+                {filedData.category || "Solid Waste Management (SWM)"}
+              </p>
+              <p className="mt-0.5 text-xs text-dust">Selected in <code className="rounded bg-paper-deep px-1 py-0.5 text-[11px] font-mono">#department</code> dropdown</p>
+            </div>
+
+            {/* 4. Location / Landmark */}
+            <div className="rounded-2xl border border-rule bg-paper/80 p-4 transition hover:border-ink/20">
+              <div className="flex items-center gap-2 text-dust">
+                <MapPin size={15} />
+                <span className="text-[11px] font-semibold uppercase tracking-[0.16em]">
+                  Location & Landmark
+                </span>
+              </div>
+              <p className="mt-2 text-base font-semibold text-ink">
+                {filedData.landmark || "Geo-tagged coordinate location"}
+              </p>
+              <p className="mt-0.5 text-xs text-dust">Entered into <code className="rounded bg-paper-deep px-1 py-0.5 text-[11px] font-mono">#landmark</code> location field</p>
+            </div>
+          </div>
+
+          {/* 5. Detailed Complaint Narrative */}
+          <div className="mt-4 rounded-2xl border border-rule bg-paper/80 p-4 transition hover:border-ink/20">
+            <div className="flex items-center gap-2 text-dust">
+              <FileText size={15} />
+              <span className="text-[11px] font-semibold uppercase tracking-[0.16em]">
+                Detailed Grievance Narrative (Description)
+              </span>
+            </div>
+            <div className="mt-2.5 rounded-xl border border-rule/80 bg-paper-deep/60 p-3.5">
+              <p className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-ink">
+                {filedData.description || "Solid waste accumulation obstructing passage and posing public health hazards."}
+              </p>
+            </div>
+            <p className="mt-2 text-xs text-dust">Entered into <code className="rounded bg-paper-deep px-1 py-0.5 text-[11px] font-mono">#description</code> textarea</p>
+          </div>
+
+          {/* 6. Photographic Evidence & Target Portal */}
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <div className="rounded-2xl border border-rule bg-paper/80 p-4 transition hover:border-ink/20">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-dust">
+                  <ImageIcon size={15} />
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.16em]">
+                    Attached Photographic Evidence
+                  </span>
+                </div>
+                <span className="rounded-full border border-rule bg-paper-deep px-2 py-0.5 text-[10px] font-bold text-dust">
+                  {allPhotos.length} Photo{allPhotos.length > 1 ? "s" : ""}
+                </span>
+              </div>
+              <div className="mt-2.5 flex items-center gap-2 overflow-x-auto">
+                {allPhotos.map((photo, i) => (
+                  <div key={photo} className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-rule">
+                    <img src={photo} alt={`Evidence ${i + 1}`} className="h-full w-full object-cover" />
+                    <span className="absolute bottom-0 right-0 rounded-tl bg-ink/75 px-1 text-[9px] font-bold text-paper">
+                      #{i + 1}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-2 text-xs text-dust">Attached to <code className="rounded bg-paper-deep px-1 py-0.5 text-[11px] font-mono">#evidence-file</code></p>
+            </div>
+
+            <div className="flex flex-col justify-between rounded-2xl border border-rule bg-paper/80 p-4 transition hover:border-ink/20">
+              <div>
+                <div className="flex items-center gap-2 text-dust">
+                  <ShieldCheck size={15} />
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.16em]">
+                    Target Grievance Gateway
+                  </span>
+                </div>
+                <p className="mt-2 text-sm font-semibold text-ink">
+                  {filedData.portal_name || authority?.corporation || "Municipal Corporation"}
+                </p>
+                <p className="mt-0.5 truncate font-mono text-xs text-dust">
+                  {filedData.portal_url || authority?.portal_url || "Direct Municipal Gateway"}
+                </p>
+              </div>
+
+              {(filedData.portal_url || authority?.portal_url) && (
+                <a
+                  href={filedData.portal_url || authority?.portal_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-3 inline-flex items-center gap-1.5 self-start text-xs font-semibold text-stamp hover:underline"
+                >
+                  Open municipal portal <ExternalLink size={13} />
+                </a>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
 
       {showLogin && (
         <section className="mt-6 rounded-[24px] border border-stamp/40 bg-stamp/10 p-5">

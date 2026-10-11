@@ -54,6 +54,21 @@ export type EmailDispatch = {
   evidence_url?: string
 }
 
+export type FiledFields = {
+  complainant_name?: string
+  mobile_number?: string
+  category?: string
+  landmark?: string
+  description?: string
+  evidence_files?: string[]
+  evidence_count?: number
+  portal_name?: string
+  portal_url?: string
+  reference_token?: string
+  filed_at?: string
+  [key: string]: any
+}
+
 export type Ticket = {
   ticket_id?: string
   status: TicketStatus
@@ -77,6 +92,7 @@ export type Ticket = {
   auth_prompt?: string
   requires_login?: boolean
   municipal_ref_id?: string
+  filed_fields?: FiledFields
   email_dispatch?: EmailDispatch
   fallback_reason?: string
   audit?: Audit

@@ -313,23 +313,27 @@ export function Capture({ onFiled, onLookup }: Props) {
 
               {/* Watermark stamp overlay if triage confirmed it is NOT garbage */}
               {isNotGarbage && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-stamp/20 p-6 text-center backdrop-blur-[1px]">
-                  <div className="stamp border-stamp bg-paper px-6 py-3 font-bold text-stamp shadow-2xl -rotate-6">
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-stamp/20 p-6 text-center backdrop-blur-[1px] animate-scale-in">
+                  <div className="stamp border-stamp bg-paper px-6 py-3 font-bold text-stamp shadow-2xl animate-stamp-slam">
                     <span className="block text-[10px] tracking-[0.22em] uppercase text-stamp">Triage Verdict</span>
                     <span className="block font-display text-xl tracking-normal text-stamp-deep">✕ Not Municipal Garbage</span>
                   </div>
-                  <p className="mt-3 rounded-full bg-ink/80 px-3.5 py-1 text-xs font-semibold text-paper shadow-md">
+                  <p className="mt-3 rounded-full bg-ink/80 px-3.5 py-1 text-xs font-semibold text-paper shadow-md animate-stagger-2">
                     Tap to replace with a photo of garbage
                   </p>
                 </div>
               )}
 
-              {/* Live scanning badge */}
+              {/* Live scanning badge & scanning laser line overlay */}
               {triageChecking && (
-                <div className="absolute top-3 right-3 flex items-center gap-2 rounded-full border border-rule bg-paper/95 px-3 py-1.5 text-xs font-semibold text-ink shadow-md backdrop-blur">
-                  <Loader2 size={13} className="animate-spin text-stamp" />
-                  <span>Triage inspecting scene…</span>
-                </div>
+                <>
+                  <div className="pointer-events-none absolute inset-x-0 z-20 h-1 bg-gradient-to-r from-transparent via-stamp to-transparent shadow-[0_0_14px_rgba(185,58,34,0.95)] animate-scan-laser" />
+                  <div className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-b from-stamp/10 via-transparent to-stamp/10 animate-pulse" />
+                  <div className="absolute top-3 right-3 z-30 flex items-center gap-2 rounded-full border border-rule bg-paper/95 px-3 py-1.5 text-xs font-semibold text-ink shadow-md backdrop-blur animate-scale-in">
+                    <Loader2 size={13} className="animate-spin text-stamp" />
+                    <span>Triage inspecting scene…</span>
+                  </div>
+                </>
               )}
             </div>
           ) : (
@@ -404,10 +408,10 @@ export function Capture({ onFiled, onLookup }: Props) {
               {previews.map((prev, idx) => (
                 <div
                   key={prev}
-                  className={`group relative shrink-0 rounded-xl overflow-hidden border-2 transition ${
+                  className={`group relative shrink-0 rounded-xl overflow-hidden border-2 transition-all duration-200 cursor-pointer ${
                     activeIdx === idx
-                      ? "border-stamp ring-2 ring-stamp/30 shadow-md"
-                      : "border-rule hover:border-ink opacity-80 hover:opacity-100"
+                      ? "border-stamp ring-2 ring-stamp/30 shadow-md scale-105"
+                      : "border-rule hover:border-ink opacity-80 hover:opacity-100 hover:scale-[1.02]"
                   }`}
                 >
                   <button
@@ -708,25 +712,32 @@ export function Capture({ onFiled, onLookup }: Props) {
           <MapPin size={12} className="shrink-0" /> {geoHint}
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
-          {PLACES.map((place) => (
-            <button
-              key={place.name}
-              type="button"
-              onClick={() => {
-                setLat(String(place.lat))
-                setLng(String(place.lng))
-                setGeoHint(`Pinned to ${place.name}.`)
-              }}
-              className="rounded-full border border-rule px-3.5 py-1.5 text-xs font-medium text-ink hover:border-ink transition active:scale-95"
-            >
-              {place.name}
-            </button>
-          ))}
+          {PLACES.map((place) => {
+            const isSelected = Math.abs(Number(lat) - place.lat) < 0.05 && Math.abs(Number(lng) - place.lng) < 0.05
+            return (
+              <button
+                key={place.name}
+                type="button"
+                onClick={() => {
+                  setLat(String(place.lat))
+                  setLng(String(place.lng))
+                  setGeoHint(`Pinned to ${place.name}.`)
+                }}
+                className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all duration-200 cursor-pointer active:scale-95 ${
+                  isSelected
+                    ? "bg-ink text-paper shadow-md scale-105"
+                    : "border border-rule text-ink hover:border-ink hover:bg-paper-deep/60"
+                }`}
+              >
+                {place.name}
+              </button>
+            )
+          })}
         </div>
 
         {/* NOT-GARBAGE NOTICE IN SIDEBAR */}
         {isNotGarbage && (
-          <div className="mt-4 rounded-2xl border border-stamp/40 bg-stamp/10 p-3.5 text-xs text-stamp-deep">
+          <div className="mt-4 rounded-2xl border border-stamp/40 bg-stamp/10 p-3.5 text-xs text-stamp-deep animate-scale-in">
             <p className="flex items-center gap-1.5 font-semibold">
               <AlertOctagon size={14} /> Submission blocked
             </p>
@@ -737,16 +748,16 @@ export function Capture({ onFiled, onLookup }: Props) {
         )}
 
         {error && (
-          <p className="mt-4 rounded-2xl bg-stamp/10 px-3 py-2 text-sm text-stamp-deep">{error}</p>
+          <p className="mt-4 rounded-2xl bg-stamp/10 px-3 py-2 text-sm text-stamp-deep animate-scale-in">{error}</p>
         )}
 
         <button
           type="submit"
           disabled={busy || triageChecking || isNotGarbage}
-          className={`mt-6 w-full rounded-full py-3.5 text-sm font-semibold tracking-wide transition active:scale-[0.98] ${
+          className={`mt-6 w-full rounded-full py-3.5 text-sm font-semibold tracking-wide transition-all duration-200 active:scale-[0.98] cursor-pointer ${
             isNotGarbage
               ? "bg-rule/70 text-dust cursor-not-allowed border border-rule"
-              : "bg-stamp text-paper hover:bg-stamp-deep disabled:opacity-60"
+              : "bg-stamp text-paper hover:bg-stamp-deep hover:shadow-xl hover:scale-[1.01] disabled:opacity-60 disabled:hover:scale-100"
           }`}
         >
           {isNotGarbage
